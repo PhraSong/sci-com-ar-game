@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sci-Com AR Explorer</title>
+    <!-- เรียกใช้ Tailwind CSS ผ่าน CDN เพื่อความรวดเร็ว -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- เรียกใช้งาน Leaflet.js สำหรับทำแผนที่ -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-blue-300">
+
+    <!-- ================= หน้าจอ Login ================= -->
+    <div id="loginScreen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-50 to-slate-200">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+            <h1 class="text-3xl font-extrabold text-center text-blue-600 mb-2">Sci-Com AR</h1>
+            <p class="text-center text-gray-500 mb-6">ภารกิจสำรวจและสร้างสรรค์นวัตกรรม</p>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold mb-1">รหัสประจำตัวนักเรียน</label>
+                    <input type="number" id="studentId" required class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" placeholder="เช่น 12345">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">ชื่อ - นามสกุล</label>
+                    <input type="text" id="studentName" required class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" placeholder="กรอกชื่อของคุณ">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold mb-1">ระดับชั้น</label>
+                    <input type="text" id="studentClass" required class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" placeholder="เช่น ม.4/1">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg mt-4 shadow-lg transition-transform active:scale-95">
+                    🚀 เริ่มการสำรวจ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= หน้าจอ Loading (รอโหลดข้อมูลจาก Sheets) ================= -->
+    <div id="loadingScreen" class="hidden min-h-screen flex flex-col items-center justify-center bg-slate-100">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+        <h2 class="text-xl font-bold text-gray-700" id="loadingText">กำลังเชื่อมต่อฐานข้อมูล...</h2>
+        <p class="text-gray-500 mt-2 text-sm text-center px-6">กำลังดาวน์โหลดพิกัดแผนที่และข้อมูล Sci-Dex<br>โปรดรอสักครู่...</p>
+    </div>
+
+    <!-- ================= หน้าจอแผนที่เกม ================= -->
+    <div id="gameScreen" class="hidden h-screen flex-col relative overflow-hidden">
+        <!-- แถบสถานะด้านบน -->
+        <div class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center z-20 relative">
+            <div class="font-bold">🧑‍🚀 <span id="displayPlayerName">Player</span></div>
+            <div class="font-bold text-yellow-300">⭐ <span id="displayScore">0</span> pt</div>
+        </div>
+        
+        <!-- พื้นที่แสดงแผนที่ GPS -->
+        <div id="map" class="flex-grow w-full z-0"></div>
+
+        <!-- แผงควบคุมด้านล่าง (Sci-Dex และ AR) -->
+        <div class="bg-white p-4 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] flex justify-between items-center z-20 relative">
+            <button onclick="openSciDex()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-4 rounded-xl shadow-md w-[48%] active:scale-95 transition-transform">
+                📖 Sci-Dex
+            </button>
+            
+            <!-- ปุ่ม AR จะกดไม่ได้ จนกว่าจะเดินเข้าใกล้ไอเทม -->
+            <button id="btnArEncounter" disabled class="bg-gray-400 text-white font-bold py-4 px-4 rounded-xl shadow-md transition-all duration-300 w-[48%]">
+                📷 ค้นหา AR
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= หน้าจอ AR Encounter ================= -->
+    <div id="arScreen" class="hidden fixed inset-0 z-50 bg-black flex-col">
+        <!-- วิดีโอพื้นหลัง (กล้องมือถือ) -->
+        <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0"></video>
+        <!-- Canvas สำหรับวาดไอเทม 2D ซ้อนทับ -->
+        <canvas id="arCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
+        
+        <!-- ปุ่มปิด AR -->
+        <div class="relative z-20 p-4 flex justify-between items-start">
+            <div class="bg-black/50 text-white px-4 py-2 rounded-lg font-bold">
+                🎯 แตะที่ไอเทมเพื่อจับ!
+            </div>
+            <button onclick="stopAR()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg">
+                ❌ ปิดกล้อง
+            </button>
+        </div>
+    </div>
+
+    <!-- ================= หน้าต่าง Quiz Modal ================= -->
+    <div id="quizModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl relative">
+            <h2 class="text-xl font-bold text-blue-600 mb-4 border-b pb-2" id="quizItemName">พบ: ไอเทม</h2>
+            <p class="text-lg font-medium text-gray-800 mb-6" id="quizQuestion">กำลังโหลดคำถาม...</p>
+            
+            <!-- ปุ่มตัวเลือก ก ข ค ง -->
+            <div class="space-y-3" id="quizChoices">
+                <!-- ปุ่มจะถูกสร้างอัตโนมัติด้วย JavaScript -->
+            </div>
+
+            <!-- หน้าต่างแสดงผลลัพธ์ (ซ่อนไว้ก่อน) -->
+            <div id="quizResult" class="hidden mt-6 p-4 rounded-xl border-2 text-center">
+                <h3 class="text-2xl font-bold mb-2" id="resultTitle"></h3>
+                <p class="text-sm text-gray-600 mb-4" id="resultFact"></p>
+                <button onclick="closeQuizAndSave()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">
+                    กลับสู่แผนที่
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= สคริปต์การทำงาน ================= -->
+    <script>
+        // ⚠️ วาง Web App URL ของคุณที่นี่ (อยู่ในเครื่องหมายคำพูด)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxv7P0EbwB-k_5KOCcH5PjzAOhAFsu1vHliCZlIiTY-mhfzO76VKhSE1aBI2_42CVrBYw/exec';
+
+        const loginForm = document.getElementById('loginForm');
+        const loginScreen = document.getElementById('loginScreen');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const gameScreen = document.getElementById('gameScreen');
+
+        // ตรวจสอบว่าเคยล็อกอินและโหลดข้อมูลไว้หรือยัง (กันเด็กเผลอรีเฟรชหน้าเว็บ)
+        window.onload = () => {
+            if (localStorage.getItem('studentId') && localStorage.getItem('gameData')) {
+                // ถ้ามีข้อมูลครบแล้ว ข้ามไปหน้าเกมเลย
+                setupGameScreen();
+            }
+        };
+
+        // จัดการเมื่อกดปุ่ม "เริ่มการสำรวจ"
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // ป้องกันเว็บรีเฟรช
+            
+            // 1. เก็บข้อมูลผู้เล่นลง Local Storage
+            localStorage.setItem('studentId', document.getElementById('studentId').value);
+            localStorage.setItem('studentName', document.getElementById('studentName').value);
+            localStorage.setItem('studentClass', document.getElementById('studentClass').value);
+            
+            // ตั้งค่าเริ่มต้นคะแนนและกระเป๋าเก็บของ ถ้ายังไม่มี
+            if(!localStorage.getItem('totalScore')) localStorage.setItem('totalScore', '0');
+            if(!localStorage.getItem('inventory')) localStorage.setItem('inventory', '{}');
+
+            // 2. สลับหน้าจอไปโหลดข้อมูล
+            loginScreen.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+
+            // 3. เรียก API ดึงข้อมูลจาก Google Sheets
+            fetchGameData();
+        });
+
+        // ฟังก์ชันดึงข้อมูลจาก GAS
+        async function fetchGameData() {
+            try {
+                // เรียกใช้ action=getGameData ที่เราเขียนไว้ใน GAS
+                const response = await fetch(`${SCRIPT_URL}?action=getGameData`);
+                const data = await response.json();
+                
+                // 4. บันทึกข้อมูล (แผนที่, ควิซ, สูตร) เก็บไว้ในเครื่องเลย
+                localStorage.setItem('gameData', JSON.stringify(data));
+                
+                // โหลดเสร็จแล้ว สลับไปหน้าเกม
+                setupGameScreen();
+            } catch (error) {
+                alert("เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง");
+                loadingScreen.classList.add('hidden');
+                loginScreen.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // ระบบแผนที่และ GPS 
+        // ==========================================
+        let map, playerMarker, circleRadius;
+        let itemMarkers = [];
+        let targetNode = null; 
+        const INTERACTION_RADIUS = 15; // รัศมีการจับไอเทม (15 เมตร)
+
+        function setupGameScreen() {
+            loadingScreen.classList.add('hidden');
+            loginScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameScreen.classList.add('flex'); // ใช้ Flex-col ให้เต็มจอ
+
+            document.getElementById('displayPlayerName').innerText = localStorage.getItem('studentName');
+            document.getElementById('displayScore').innerText = localStorage.getItem('totalScore');
+            
+            // ให้เวลา UI กางออกเต็มที่ 0.5 วินาที แล้วค่อยวาดแผนที่
+            setTimeout(initMap, 500); 
+        }
+
+        function initMap() {
+            // 1. วาดแผนที่เริ่มต้น
+            map = L.map('map', { zoomControl: false }).setView([13.756, 100.501], 18); 
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 20, attribution: '© OpenStreetMap'
+            }).addTo(map);
+
+            // 2. โหลดจุดซ่อนไอเทมมาปักหมุด
+            const gameData = JSON.parse(localStorage.getItem('gameData'));
+            if (gameData && gameData.nodes) {
+                gameData.nodes.forEach(node => {
+                    if (node.Lat && node.Lng) {
+                        let marker = L.marker([node.Lat, node.Lng]).addTo(map)
+                            .bindPopup(`<b>${node.Item_Name}</b><br>เดินมาใกล้ๆ ในระยะ ${INTERACTION_RADIUS} ม. เพื่อสแกน`);
+                        itemMarkers.push({ marker: marker, data: node });
+                    }
+                });
+            }
+
+            // 3. เริ่มติดตาม GPS (ใช้ข้อมูลจากมือถือ)
+            if (navigator.geolocation) {
+                navigator.geolocation.watchPosition(updatePlayerPosition, (err) => console.warn(err), {
+                    enableHighAccuracy: true, maximumAge: 2000, timeout: 5000
+                });
+            } else {
+                alert("อุปกรณ์ของคุณไม่รองรับระบบ GPS");
+            }
+        }
+
+        function updatePlayerPosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // ถ้าเพิ่งเปิดแผนที่ ให้สร้างจุดสีฟ้าแทนตัวผู้เล่น
+            if (!playerMarker) {
+                const playerIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: "<div style='background-color:#3b82f6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);'></div>",
+                    iconSize: [20, 20], iconAnchor: [10, 10]
+                });
+                playerMarker = L.marker([lat, lng], {icon: playerIcon}).addTo(map);
+                circleRadius = L.circle([lat, lng], { radius: INTERACTION_RADIUS, color: '#3b82f6', fillOpacity: 0.1, weight: 1 }).addTo(map);
+                map.setView([lat, lng], 18); // ขยับกล้องไปหาผู้เล่น
+            } else {
+                // ถ้าเดินอยู่ ให้อัปเดตจุดตามพิกัดใหม่
+                playerMarker.setLatLng([lat, lng]);
+                circleRadius.setLatLng([lat, lng]);
+            }
+
+            // 4. ตรวจสอบระยะทางระหว่างผู้เล่นกับไอเทม
+            checkDistanceToItems(lat, lng);
+        }
+
+        function checkDistanceToItems(pLat, pLng) {
+            let canCatch = false;
+            let closestNode = null;
+            
+            itemMarkers.forEach(item => {
+                const distance = calculateDistance(pLat, pLng, item.data.Lat, item.data.Lng);
+                if (distance <= INTERACTION_RADIUS) {
+                    canCatch = true;
+                    closestNode = item.data;
+                }
+            });
+
+            // เปิด/ปิด ปุ่ม AR
+            const btnAR = document.getElementById('btnArEncounter');
+            if (canCatch) {
+                btnAR.disabled = false;
+                btnAR.classList.remove('bg-gray-400');
+                btnAR.classList.add('bg-green-500', 'hover:bg-green-600', 'animate-bounce');
+                btnAR.innerText = "📸 จับไอเทม!";
+                targetNode = closestNode;
+            } else {
+                btnAR.disabled = true;
+                btnAR.classList.add('bg-gray-400');
+                btnAR.classList.remove('bg-green-500', 'hover:bg-green-600', 'animate-bounce');
+                btnAR.innerText = "📷 ค้นหา AR";
+                targetNode = null;
+            }
+        }
+
+        // สูตรคำนวณระยะทาง Haversine Formula (คำนวณความโค้งของโลก)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371e3;
+            const f1 = lat1 * Math.PI/180;
+            const f2 = lat2 * Math.PI/180;
+            const df = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(df/2) * Math.sin(df/2) + Math.cos(f1) * Math.cos(f2) * Math.sin(dl/2) * Math.sin(dl/2);
+            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        }
+
+        // ==========================================
+        // ระบบ Sci-Dex และ Crafting
+        // ==========================================
+        const sciDexModal = document.getElementById('sciDexModal');
+        const inventoryContainer = document.getElementById('inventoryContainer');
+        const recipeContainer = document.getElementById('recipeContainer');
+        const craftAlert = document.getElementById('craftAlert');
+
+        function openSciDex() {
+            sciDexModal.classList.remove('hidden');
+            sciDexModal.classList.add('flex');
+            
+            // อัปเดตข้อมูลให้เป็นปัจจุบันที่สุดเมื่อเปิดหน้าต่าง
+            renderInventory();
+            renderRecipes();
+        }
+
+        function closeSciDex() {
+            sciDexModal.classList.add('hidden');
+            sciDexModal.classList.remove('flex');
+        }
+
+        function renderInventory() {
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
+            inventoryContainer.innerHTML = '';
+            
+            let hasItems = false;
+            for (let item in inventory) {
+                if (inventory[item] > 0) {
+                    hasItems = true;
+                    // สร้างป้ายชื่อไอเทมแบบ Tag
+                    const badge = document.createElement('div');
+                    badge.className = "bg-blue-100 text-blue-800 font-bold px-3 py-1 rounded-full text-sm border border-blue-300 shadow-sm";
+                    badge.innerHTML = `${item} <span class="bg-blue-600 text-white px-2 py-0.5 rounded-full ml-1 text-xs">${inventory[item]}</span>`;
+                    inventoryContainer.appendChild(badge);
+                }
+            }
+
+            if (!hasItems) {
+                inventoryContainer.innerHTML = '<p class="text-sm text-gray-400 w-full text-center py-2">กระเป๋าว่างเปล่า เดินไปตามแผนที่เพื่อหาไอเทมกันเถอะ!</p>';
+            }
+        }
+
+        function renderRecipes() {
+            const gameData = JSON.parse(localStorage.getItem('gameData'));
+            let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
+            
+            recipeContainer.innerHTML = '';
+
+            if (!gameData || !gameData.recipes) return;
+
+            gameData.recipes.forEach(recipe => {
+                // ข้ามสูตรที่ว่างเปล่า (กรณีจัดตาราง Sheets เผื่อไว้)
+                if (!recipe.Result_Item) return;
+
+                // เช็กจำนวนไอเทมที่ต้องใช้ vs ที่มีในกระเป๋า
+                const req1Name = recipe.Req_Item_1;
+                const req1Qty = parseInt(recipe.Req_QTY_1) || 0;
+                const has1Qty = inventory[req1Name] || 0;
+                const isReq1Ready = has1Qty >= req1Qty;
+
+                const req2Name = recipe.Req_Item_2;
+                const req2Qty = parseInt(recipe.Req_QTY_2) || 0;
+                let has2Qty = 0;
+                let isReq2Ready = true; // สมมติว่าพร้อมไว้ก่อน เผื่อเป็นสูตรที่ใช้ของแค่ชิ้นเดียว
+                
+                if (req2Name) {
+                    has2Qty = inventory[req2Name] || 0;
+                    isReq2Ready = has2Qty >= req2Qty;
+                }
+
+                const isCraftable = isReq1Ready && isReq2Ready;
+
+                // สร้างหน้าการ์ดสูตรคราฟต์
+                const card = document.createElement('div');
+                // ถ้าคราฟต์ได้ให้สว่าง ถ้าไม่ได้ให้เป็นภาพสีเทาๆ จางๆ
+                card.className = `p-4 rounded-xl border-2 transition-all ${isCraftable ? 'bg-indigo-50 border-indigo-400' : 'bg-gray-50 border-gray-200 grayscale opacity-70'}`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-lg ${isCraftable ? 'text-indigo-700' : 'text-gray-600'}">🌟 ${recipe.Result_Item}</h4>
+                        <span class="text-xs font-bold bg-yellow-100 text-yellow-700 px-2 py-1 rounded-lg">+${recipe.Bonus_Points} pt</span>
+                    </div>
+                    <div class="flex flex-col gap-1 text-sm text-gray-600 mb-3">
+                        <div class="flex justify-between">
+                            <span>- ${req1Name}</span>
+                            <span class="${isReq1Ready ? 'text-green-600 font-bold' : 'text-red-500'}">${has1Qty} / ${req1Qty}</span>
+                        </div>
+                        ${req2Name ? `
+                        <div class="flex justify-between">
+                            <span>- ${req2Name}</span>
+                            <span class="${isReq2Ready ? 'text-green-600 font-bold' : 'text-red-500'}">${has2Qty} / ${req2Qty}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <button onclick="craftItem('${recipe.Recipe_ID}')" ${isCraftable ? '' : 'disabled'} 
+                        class="w-full font-bold py-2 rounded-lg shadow-sm transition-all ${isCraftable ? 'bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}">
+                        ${isCraftable ? '🔨 สร้างนวัตกรรม' : 'วัตถุดิบไม่เพียงพอ'}
+                    </button>
+                `;
+                recipeContainer.appendChild(card);
+            });
+        }
+
+        function craftItem(recipeId) {
+            const gameData = JSON.parse(localStorage.getItem('gameData'));
+            let inventory = JSON.parse(localStorage.getItem('inventory'));
+            let score = parseInt(localStorage.getItem('totalScore'));
+
+            const recipe = gameData.recipes.find(r => r.Recipe_ID === recipeId);
+            if (!recipe) return;
+
+            // หักลบวัตถุดิบ
+            inventory[recipe.Req_Item_1] -= parseInt(recipe.Req_QTY_1);
+            if (recipe.Req_Item_2) {
+                inventory[recipe.Req_Item_2] -= parseInt(recipe.Req_QTY_2);
+            }
+
+            // เพิ่มนวัตกรรมชิ้นใหม่เข้ากระเป๋า
+            const resultItem = recipe.Result_Item;
+            if(inventory[resultItem]) {
+                inventory[resultItem] += 1;
+            } else {
+                inventory[resultItem] = 1;
+            }
+
+            // บวกคะแนนโบนัส
+            const bonus = parseInt(recipe.Bonus_Points) || 0;
+            score += bonus;
+
+            // บันทึกข้อมูลลงเครื่อง
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            localStorage.setItem('totalScore', score.toString());
+            document.getElementById('displayScore').innerText = score;
+
+            // รีเฟรชหน้าต่าง Sci-Dex ทันที
+            renderInventory();
+            renderRecipes();
+
+            // ส่งข้อมูลอัปเดตไป Google Sheets
+            saveDataToSheets(score, inventory);
+
+            // แสดงแจ้งเตือนสวยๆ
+            document.getElementById('craftBonusScore').innerText = bonus;
+            craftAlert.classList.remove('hidden');
+            setTimeout(() => {
+                craftAlert.classList.add('hidden');
+            }, 2500);
+        }
+
+        // ==========================================
+        // ระบบ AR (Camera & Canvas)
+        // ==========================================
+        const arScreen = document.getElementById('arScreen');
+        const cameraFeed = document.getElementById('cameraFeed');
+        const arCanvas = document.getElementById('arCanvas');
+        const ctx = arCanvas.getContext('2d');
+        
+        let arAnimationId;
+        let itemX, itemY, itemRadius = 60;
+        let floatingOffset = 0;
+
+        // เมื่อกดปุ่ม "📷 จับไอเทม!" จากหน้าแผนที่
+        document.getElementById('btnArEncounter').addEventListener('click', () => {
+            if (targetNode) startAR();
+        });
+
+        async function startAR() {
+            arScreen.classList.remove('hidden');
+            arScreen.classList.add('flex');
+            
+            // ปรับขนาด Canvas ให้เต็มจอ
+            arCanvas.width = window.innerWidth;
+            arCanvas.height = window.innerHeight;
+
+            // สุ่มตำแหน่งเกิดของไอเทมบนจอ
+            itemX = arCanvas.width / 2;
+            itemY = arCanvas.height / 2;
+
+            try {
+                // เปิดกล้องหลัง
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                cameraFeed.srcObject = stream;
+                
+                // เริ่มลูปวาดกราฟิก
+                drawARItem();
+            } catch (err) {
+                alert("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง");
+                stopAR();
+            }
+        }
+
+        function stopAR() {
+            arScreen.classList.add('hidden');
+            arScreen.classList.remove('flex');
+            
+            // ปิดกล้อง
+            if (cameraFeed.srcObject) {
+                cameraFeed.srcObject.getTracks().forEach(track => track.stop());
+            }
+            cancelAnimationFrame(arAnimationId);
+        }
+
+        // วาดไอเทม 2D ลอยขึ้นลงบนจอกล้อง
+        function drawARItem() {
+            ctx.clearRect(0, 0, arCanvas.width, arCanvas.height);
+            
+            // อนิเมชันลอยขึ้นลง (Bobbing)
+            floatingOffset += 0.05;
+            let currentY = itemY + Math.sin(floatingOffset) * 20;
+
+            // วาดวงกลมเรืองแสง
+            ctx.beginPath();
+            ctx.arc(itemX, currentY, itemRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.8)'; // สีฟ้า
+            ctx.fill();
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = 'white';
+            ctx.stroke();
+
+            // วาดชื่อไอเทม
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 20px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(targetNode.Item_Name, itemX, currentY);
+
+            arAnimationId = requestAnimationFrame(drawARItem);
+        }
+
+        // ตรวจจับการแตะ (Tap) บนไอเทม 2D
+        arCanvas.addEventListener('pointerdown', (e) => {
+            let currentY = itemY + Math.sin(floatingOffset) * 20;
+            // เช็กว่านิ้วจิ้มโดนวงกลมหรือไม่ (สูตรหาระยะห่างจุด 2 จุด)
+            const dist = Math.hypot(e.clientX - itemX, e.clientY - currentY);
+            if (dist <= itemRadius + 20) { // เผื่อระยะนิ้วให้กดง่ายขึ้น 20px
+                stopAR();
+                openQuiz(targetNode.Node_ID);
+            }
+        });
+
+        // ==========================================
+        // ระบบควิซ (Quiz & Scoring)
+        // ==========================================
+        const quizModal = document.getElementById('quizModal');
+        const quizResult = document.getElementById('quizResult');
+        const quizChoices = document.getElementById('quizChoices');
+        let currentQuiz = null;
+
+        function openQuiz(nodeId) {
+            const gameData = JSON.parse(localStorage.getItem('gameData'));
+            // ค้นหาคำถามที่ตรงกับรหัส Node
+            currentQuiz = gameData.quizzes.find(q => q.Node_ID === nodeId);
+            
+            if (!currentQuiz) {
+                alert("ไม่พบข้อมูลคำถามสำหรับจุดนี้");
+                return;
+            }
+
+            document.getElementById('quizItemName').innerText = `🧬 ค้นพบ: ${targetNode.Item_Name}`;
+            document.getElementById('quizQuestion').innerText = currentQuiz.Question;
+            quizResult.classList.add('hidden');
+            quizChoices.innerHTML = ''; // เคลียร์ปุ่มเก่า
+            quizChoices.classList.remove('hidden');
+
+            // สร้างปุ่มตัวเลือก
+            const choices = [
+                { key: 'A', text: currentQuiz.Choice_A },
+                { key: 'B', text: currentQuiz.Choice_B },
+                { key: 'C', text: currentQuiz.Choice_C },
+                { key: 'D', text: currentQuiz.Choice_D }
+            ];
+
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-left p-4 rounded-xl border-2 border-gray-200 font-medium hover:border-blue-500 focus:outline-none transition-colors";
+                btn.innerText = `${choice.key}. ${choice.text}`;
+                btn.onclick = () => checkAnswer(choice.key, btn);
+                quizChoices.appendChild(btn);
+            });
+
+            quizModal.classList.remove('hidden');
+        }
+
+        function checkAnswer(selectedKey, btnElement) {
+            // ปิดการกดซ้ำ
+            const buttons = quizChoices.getElementsByTagName('button');
+            for(let b of buttons) b.disabled = true;
+
+            quizChoices.classList.add('hidden');
+            quizResult.classList.remove('hidden');
+            
+            if (selectedKey === currentQuiz.Correct_Answer) {
+                // ตอบถูก!
+                quizResult.className = "mt-6 p-4 rounded-xl border-2 bg-green-50 border-green-400 text-center";
+                document.getElementById('resultTitle').innerHTML = "🎉 ยอดเยี่ยม! ตอบถูกต้อง";
+                document.getElementById('resultTitle').className = "text-2xl font-bold mb-2 text-green-600";
+                document.getElementById('resultFact').innerText = `เกร็ดความรู้: ${currentQuiz.SciDex_Fact}`;
+                
+                // เก็บไอเทมเข้ากระเป๋าและบวกคะแนน
+                processCatchSuccess();
+            } else {
+                // ตอบผิด
+                quizResult.className = "mt-6 p-4 rounded-xl border-2 bg-red-50 border-red-400 text-center";
+                document.getElementById('resultTitle').innerHTML = "❌ น่าเสียดาย ตอบผิด!";
+                document.getElementById('resultTitle').className = "text-2xl font-bold mb-2 text-red-600";
+                document.getElementById('resultFact').innerText = "ลองไปหาข้อมูลเพิ่มเติม แล้วกลับมาสแกนใหม่นะ!";
+            }
+        }
+
+        function processCatchSuccess() {
+            // ดึงข้อมูลคลังไอเทมเดิม
+            let inventory = JSON.parse(localStorage.getItem('inventory'));
+            let itemName = targetNode.Item_Name;
+            
+            // เพิ่มจำนวนไอเทม
+            if(inventory[itemName]) {
+                inventory[itemName] += 1;
+            } else {
+                inventory[itemName] = 1;
+            }
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+
+            // บวกคะแนน (จุดละ 10 คะแนน)
+            let score = parseInt(localStorage.getItem('totalScore')) + 10;
+            localStorage.setItem('totalScore', score.toString());
+            document.getElementById('displayScore').innerText = score;
+
+            // บังคับเปลี่ยนสีหมุดแผนที่เป็นสีเทาชั่วคราว (กันฟาร์มซ้ำ)
+            targetNode = null;
+            document.getElementById('btnArEncounter').disabled = true;
+            document.getElementById('btnArEncounter').classList.replace('bg-green-500', 'bg-gray-400');
+            document.getElementById('btnArEncounter').innerText = "⏳ รอไอเทมเกิดใหม่";
+
+            // ส่งข้อมูลกลับไปบันทึกที่ Google Sheets
+            saveDataToSheets(score, inventory);
+        }
+
+        async function saveDataToSheets(score, inventory) {
+            const payload = {
+                Student_ID: localStorage.getItem('studentId'),
+                Name: localStorage.getItem('studentName'),
+                Class: localStorage.getItem('studentClass'),
+                Total_Score: score,
+                Inventory_Data: JSON.stringify(inventory)
+            };
+
+            try {
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                }); // ยิงไปแบบไม่รอโหลด เพื่อไม่ให้แอปสะดุด
+            } catch (err) {
+                console.error("Save Error:", err);
+            }
+        }
+
+        function closeQuizAndSave() {
+            quizModal.classList.add('hidden');
+        }
+
+        <!-- ================= หน้าต่าง Sci-Dex & Crafting ================= -->
+    <div id="sciDexModal" class="hidden fixed inset-0 z-[70] bg-slate-100 flex-col h-screen overflow-hidden">
+        <!-- แถบด้านบน -->
+        <div class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center z-10">
+            <h2 class="text-xl font-bold">📖 สมุด Sci-Dex</h2>
+            <button onclick="closeSciDex()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-lg font-bold">
+                ปิด
+            </button>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-20">
+            <!-- ส่วนที่ 1: กระเป๋าเก็บของ -->
+            <div class="bg-white rounded-2xl shadow-sm p-4 mb-6 border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">🎒 กระเป๋าของฉัน</h3>
+                <div id="inventoryContainer" class="flex flex-wrap gap-2">
+                    <!-- ไอเทมในกระเป๋าจะถูกสร้างตรงนี้ -->
+                    <p class="text-sm text-gray-400">ยังไม่มีไอเทม เริ่มสำรวจเลย!</p>
+                </div>
+            </div>
+
+            <!-- ส่วนที่ 2: ห้องวิจัย (Crafting) -->
+            <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">🔬 นวัตกรรม (Crafting)</h3>
+                <div id="recipeContainer" class="space-y-4">
+                    <!-- สูตรคราฟต์จะถูกสร้างตรงนี้ -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- แจ้งเตือนเมื่อคราฟต์สำเร็จ (ซ่อนไว้ก่อน) -->
+        <div id="craftAlert" class="hidden absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-2xl z-50 animate-bounce transition-all">
+            ✨ คราฟต์สำเร็จ! +<span id="craftBonusScore">0</span> คะแนน
+        </div>
+    </div>
+
+
+    </script>
+</body>
+</html>
