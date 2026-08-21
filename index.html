@@ -47,9 +47,9 @@
     </div>
 
     <!-- ================= หน้าจอแผนที่เกม ================= -->
-    <div id="gameScreen" class="hidden h-screen flex-col relative overflow-hidden">
-        <!-- แถบสถานะด้านบน -->
-        <div class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center z-20 relative">
+    <div id="gameScreen" class="hidden fixed inset-0 h-[100dvh] w-full flex-col overflow-hidden bg-slate-100">
+        <!-- แถบสถานะด้านบน (ใส่ flex-shrink-0 ป้องกันการโดนบีบ) -->
+        <div class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center z-20 flex-shrink-0">
             <div class="font-bold">🧑‍🚀 <span id="displayPlayerName">Player</span></div>
             <div class="font-bold text-yellow-300">⭐ <span id="displayScore">0</span> pt</div>
         </div>
@@ -57,8 +57,8 @@
         <!-- พื้นที่แสดงแผนที่ GPS -->
         <div id="map" class="flex-grow w-full z-0"></div>
 
-        <!-- แผงควบคุมด้านล่าง (Sci-Dex และ AR) -->
-        <div class="bg-white p-3 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] flex gap-3 z-20 relative w-full">
+        <!-- แผงควบคุมด้านล่าง (ใส่ pb-8 เผื่อระยะขอบล่างสำหรับ iPhone ปัดขึ้น) -->
+        <div class="bg-white p-3 pb-8 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.1)] flex gap-3 z-20 flex-shrink-0 w-full">
             <button onclick="openSciDex()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-2 rounded-xl shadow-md active:scale-95 transition-transform text-sm sm:text-base flex items-center justify-center whitespace-nowrap">
                 📖 Sci-Dex
             </button>
@@ -69,7 +69,7 @@
             </button>
         </div>
     </div>
-
+    
     <!-- ================= หน้าจอ AR Encounter ================= -->
     <div id="arScreen" class="hidden fixed inset-0 z-50 bg-black flex-col">
         <!-- วิดีโอพื้นหลัง (กล้องมือถือ) -->
@@ -111,7 +111,7 @@
     </div>
 
     <!-- ================= หน้าต่าง Sci-Dex & Crafting ================= -->
-    <div id="sciDexModal" class="hidden fixed inset-0 z-[70] bg-slate-100 flex-col h-screen overflow-hidden">
+    <div id="sciDexModal" class="hidden fixed inset-0 z-[70] bg-slate-100 flex-col h-[100dvh] overflow-hidden">
         <!-- แถบด้านบน -->
         <div class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center z-10">
             <h2 class="text-xl font-bold">📖 สมุด Sci-Dex</h2>
