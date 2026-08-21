@@ -160,6 +160,10 @@
 
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault(); 
+            // ขออนุญาตใช้เซ็นเซอร์เข็มทิศสำหรับ iOS 13+
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().catch(console.error);
+            }
             localStorage.setItem('studentId', document.getElementById('studentId').value);
             localStorage.setItem('studentName', document.getElementById('studentName').value);
             localStorage.setItem('studentClass', document.getElementById('studentClass').value);
@@ -235,6 +239,27 @@
                     enableHighAccuracy: true, maximumAge: 2000, timeout: 5000
                 });
             }
+
+            // [ระบบใหม่] อ่านค่าเข็มทิศจากเซ็นเซอร์มือถือ เพื่อหมุนลูกศรผู้เล่น
+            window.addEventListener("deviceorientation", (event) => {
+                let compass = document.getElementById('playerMarkerGfx');
+                if (compass) {
+                    let heading = 0;
+                    if (event.webkitCompassHeading) {
+                        heading = event.webkitCompassHeading; // สำหรับ iOS
+                    } else if (event.alpha !== null) {
+                        heading = 360 - event.alpha; // สำหรับ Android
+                    }
+                    compass.style.transform = `rotate(${heading}deg)`;
+                }
+            }, true);
+        }
+        // ฟังก์ชันช่วยกำหนดสีตามความหายาก (Rarity)
+        function getRarityColors(rarity) {
+            if(rarity === 'แรร์ไอเทม') return { bg: '#eab308', text: '#fff', shadow: 'rgba(234,179,8,0.8)' }; // สีทอง
+            if(rarity === 'ยาก') return { bg: '#a855f7', text: '#fff', shadow: 'rgba(168,85,247,0.8)' }; // สีม่วง
+            if(rarity === 'กลาง') return { bg: '#3b82f6', text: '#fff', shadow: 'rgba(59,130,246,0.8)' }; // สีฟ้า
+            return { bg: '#10b981', text: '#fff', shadow: 'rgba(16,185,129,0.8)' }; // สีเขียว (ง่าย / ค่าเริ่มต้น)
         }
 
         function spawnItems() {
@@ -250,15 +275,18 @@
                     node.Lat = randomLat;
                     node.Lng = randomLng;
 
+                    // [ระบบใหม่] ดึงสีตามระดับ Rarity
+                    let rColor = getRarityColors(node.Rarity);
+
                     const mysteryIcon = L.divIcon({
                         className: 'mystery-icon',
-                        html: "<div style='background-color:#1e293b; color:#fbbf24; width:35px; height:35px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:20px; box-shadow:0 0 10px rgba(0,0,0,0.5);'>?</div>",
+                        html: `<div style='background-color:${rColor.bg}; color:${rColor.text}; width:35px; height:35px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:20px; box-shadow:0 0 15px ${rColor.shadow};'>?</div>`,
                         iconSize: [35, 35],
                         iconAnchor: [17, 17]
                     });
 
                     let marker = L.marker([randomLat, randomLng], {icon: mysteryIcon}).addTo(map)
-                        .bindPopup(`<b>จุดปริศนา</b><br>เดินมาสแกน AR เพื่อดูว่าเป็นไอเทมอะไร!`);
+                        .bindPopup(`<b>จุดปริศนา ${node.Rarity ? `[${node.Rarity}]` : ''}</b><br>เดินมาสแกน AR เพื่อดูว่าเป็นไอเทมอะไร!`);
                     
                     itemMarkers.push({ marker: marker, data: node });
                 });
@@ -275,9 +303,15 @@
             const lng = position.coords.longitude;
             
             if (!playerMarker) {
+                // [ระบบใหม่] เพิ่มลูกศรสีแดงชี้ทิศทาง (Compass Pointer) บนจุดสีฟ้า
+                const playerIconHTML = `
+                    <div id="playerMarkerGfx" style='background-color:#3b82f6; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); position:relative; transition: transform 0.1s ease-out;'>
+                        <div style='position:absolute; top:-12px; left:2px; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:10px solid #ef4444;'></div>
+                    </div>
+                `;
                 const playerIcon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: "<div style='background-color:#3b82f6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 0 10px rgba(0,0,0,0.5);'></div>",
+                    html: playerIconHTML,
                     iconSize: [20, 20], iconAnchor: [10, 10]
                 });
                 playerMarker = L.marker([lat, lng], {icon: playerIcon}).addTo(map);
@@ -349,21 +383,45 @@
 
         function renderInventory() {
             let inventory = JSON.parse(localStorage.getItem('inventory')) || {};
+            const gameData = JSON.parse(localStorage.getItem('gameData'));
             inventoryContainer.innerHTML = '';
             
             let hasItems = false;
             for (let item in inventory) {
                 if (inventory[item] > 0) {
                     hasItems = true;
+
+                    // [ระบบใหม่] ค้นหาว่าไอเทมนี้ใช้คราฟต์อะไรได้บ้าง
+                    let craftableInto = [];
+                    if(gameData && gameData.recipes) {
+                        gameData.recipes.forEach(r => {
+                            if(r.Req_Item_1 === item || r.Req_Item_2 === item) {
+                                craftableInto.push(r.Result_Item);
+                            }
+                        });
+                    }
+                    
+                    // แสดงข้อความคู่มือการผสม
+                    let hintText = craftableInto.length > 0 
+                        ? `> ใช้ผสม: ${craftableInto.join(', ')}` 
+                        : '> นวัตกรรมขั้นสูงสุด (คราฟต์ต่อไม่ได้แล้ว)';
+
+                    // สร้างกรอบไอเทมสไตล์ตู้เกม
                     const badge = document.createElement('div');
-                    badge.className = "bg-slate-700 text-green-400 font-bold px-3 py-2 border-2 border-slate-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] text-sm flex items-center gap-2";
-                    badge.innerHTML = `${item} <span class="bg-blue-600 text-white px-2 py-0.5 border border-blue-400 text-xs">${inventory[item]}</span>`;
+                    badge.className = "w-full bg-slate-700 p-3 border-2 border-slate-500 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] flex flex-col gap-1 mb-2 transition-all";
+                    badge.innerHTML = `
+                        <div class="flex justify-between items-center text-green-400 font-bold text-lg">
+                            <span>${item}</span>
+                            <span class="bg-blue-600 text-white px-3 py-1 border-2 border-blue-400 text-sm">x${inventory[item]}</span>
+                        </div>
+                        <div class="text-xs text-yellow-300 font-mono mt-1 border-t border-slate-600 pt-1">${hintText}</div>
+                    `;
                     inventoryContainer.appendChild(badge);
                 }
             }
 
             if (!hasItems) {
-                inventoryContainer.innerHTML = '<p class="text-sm text-gray-400 w-full text-center py-2">กระเป๋าว่างเปล่า เดินไปตามแผนที่เพื่อหาไอเทมกันเถอะ!</p>';
+                inventoryContainer.innerHTML = '<p class="text-sm text-slate-500 w-full text-center py-2 font-mono">> NO ITEMS FOUND_</p>';
             }
         }
 
