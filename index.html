@@ -269,13 +269,19 @@
             const gameData = JSON.parse(localStorage.getItem('gameData'));
             if (gameData && gameData.nodes) {
                 gameData.nodes.forEach(node => {
+                    // 🛑 [ระบบที่เพิ่มใหม่] ตรวจสอบว่าเป็นไอเทมผี (บรรทัดว่าง) หรือไม่
+                    // ถ้าไม่มี Node_ID หรือไม่มีชื่อไอเทม ให้ข้ามบรรทัดนี้ไปเลย (return)
+                    if (!node.Node_ID || !node.Item_Name || node.Item_Name.trim() === "") {
+                        return; 
+                    }
+
                     const randomLat = PLAY_AREA.minLat + Math.random() * (PLAY_AREA.maxLat - PLAY_AREA.minLat);
                     const randomLng = PLAY_AREA.minLng + Math.random() * (PLAY_AREA.maxLng - PLAY_AREA.minLng);
 
                     node.Lat = randomLat;
                     node.Lng = randomLng;
 
-                    // [ระบบใหม่] ดึงสีตามระดับ Rarity
+                    // ดึงสีตามระดับ Rarity
                     let rColor = getRarityColors(node.Rarity);
 
                     const mysteryIcon = L.divIcon({
