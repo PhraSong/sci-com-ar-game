@@ -110,41 +110,6 @@
         </div>
     </div>
 
-                <!-- ================= หน้าต่าง Sci-Dex & Crafting ================= -->
-    <div id="sciDexModal" class="hidden fixed inset-0 z-[70] bg-slate-100 flex-col h-screen overflow-hidden">
-        <!-- แถบด้านบน -->
-        <div class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center z-10">
-            <h2 class="text-xl font-bold">📖 สมุด Sci-Dex</h2>
-            <button onclick="closeSciDex()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-lg font-bold">
-                ปิด
-            </button>
-        </div>
-
-        <div class="flex-grow overflow-y-auto p-4 pb-20">
-            <!-- ส่วนที่ 1: กระเป๋าเก็บของ -->
-            <div class="bg-white rounded-2xl shadow-sm p-4 mb-6 border border-gray-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">🎒 กระเป๋าของฉัน</h3>
-                <div id="inventoryContainer" class="flex flex-wrap gap-2">
-                    <!-- ไอเทมในกระเป๋าจะถูกสร้างตรงนี้ -->
-                    <p class="text-sm text-gray-400">ยังไม่มีไอเทม เริ่มสำรวจเลย!</p>
-                </div>
-            </div>
-
-            <!-- ส่วนที่ 2: ห้องวิจัย (Crafting) -->
-            <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">🔬 นวัตกรรม (Crafting)</h3>
-                <div id="recipeContainer" class="space-y-4">
-                    <!-- สูตรคราฟต์จะถูกสร้างตรงนี้ -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- แจ้งเตือนเมื่อคราฟต์สำเร็จ (ซ่อนไว้ก่อน) -->
-        <div id="craftAlert" class="hidden absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-2xl z-50 animate-bounce transition-all">
-            ✨ คราฟต์สำเร็จ! +<span id="craftBonusScore">0</span> คะแนน
-        </div>
-    </div>
-
     <!-- ================= สคริปต์การทำงาน ================= -->
     <script>
         // ⚠️ วาง Web App URL ของคุณที่นี่ (อยู่ในเครื่องหมายคำพูด)
@@ -551,12 +516,18 @@
 
         // ตรวจจับการแตะ (Tap) บนไอเทม 2D
         arCanvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault(); // ป้องกันเบราว์เซอร์ส่งคำสั่งคลิกซ้ำซ้อน
             let currentY = itemY + Math.sin(floatingOffset) * 20;
-            // เช็กว่านิ้วจิ้มโดนวงกลมหรือไม่ (สูตรหาระยะห่างจุด 2 จุด)
+            
+            // เช็กว่านิ้วจิ้มโดนวงกลมหรือไม่
             const dist = Math.hypot(e.clientX - itemX, e.clientY - currentY);
-            if (dist <= itemRadius + 20) { // เผื่อระยะนิ้วให้กดง่ายขึ้น 20px
+            if (dist <= itemRadius + 20) { 
                 stopAR();
-                openQuiz(targetNode.Node_ID);
+                
+                // แก้ปัญหา Ghost Click: หน่วงเวลา 0.3 วินาทีให้นิ้วยกออกจากจอก่อนเปิดควิซ
+                setTimeout(() => {
+                    openQuiz(targetNode.Node_ID);
+                }, 300);
             }
         });
 
@@ -680,7 +651,42 @@
             quizModal.classList.add('hidden');
         }
 
-    
+        <!-- ================= หน้าต่าง Sci-Dex & Crafting ================= -->
+    <div id="sciDexModal" class="hidden fixed inset-0 z-[70] bg-slate-100 flex-col h-screen overflow-hidden">
+        <!-- แถบด้านบน -->
+        <div class="bg-indigo-600 text-white p-4 shadow-md flex justify-between items-center z-10">
+            <h2 class="text-xl font-bold">📖 สมุด Sci-Dex</h2>
+            <button onclick="closeSciDex()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-lg font-bold">
+                ปิด
+            </button>
+        </div>
+
+        <div class="flex-grow overflow-y-auto p-4 pb-20">
+            <!-- ส่วนที่ 1: กระเป๋าเก็บของ -->
+            <div class="bg-white rounded-2xl shadow-sm p-4 mb-6 border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">🎒 กระเป๋าของฉัน</h3>
+                <div id="inventoryContainer" class="flex flex-wrap gap-2">
+                    <!-- ไอเทมในกระเป๋าจะถูกสร้างตรงนี้ -->
+                    <p class="text-sm text-gray-400">ยังไม่มีไอเทม เริ่มสำรวจเลย!</p>
+                </div>
+            </div>
+
+            <!-- ส่วนที่ 2: ห้องวิจัย (Crafting) -->
+            <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-700 mb-3 border-b pb-2">🔬 นวัตกรรม (Crafting)</h3>
+                <div id="recipeContainer" class="space-y-4">
+                    <!-- สูตรคราฟต์จะถูกสร้างตรงนี้ -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- แจ้งเตือนเมื่อคราฟต์สำเร็จ (ซ่อนไว้ก่อน) -->
+        <div id="craftAlert" class="hidden absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-2xl z-50 animate-bounce transition-all">
+            ✨ คราฟต์สำเร็จ! +<span id="craftBonusScore">0</span> คะแนน
+        </div>
+    </div>
+
+
     </script>
 </body>
 </html>
