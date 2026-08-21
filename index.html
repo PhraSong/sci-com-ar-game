@@ -13,27 +13,55 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans antialiased selection:bg-blue-300">
 
-    <!-- ================= หน้าจอ Login ================= -->
-    <div id="loginScreen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-blue-50 to-slate-200">
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-            <h1 class="text-3xl font-extrabold text-center text-blue-600 mb-2">Sci-Com AR</h1>
-            <p class="text-center text-gray-500 mb-6">ภารกิจสำรวจและสร้างสรรค์นวัตกรรม</p>
+    <!-- ================= หน้าจอ Login (อัปเกรดธีม 8-Bit) ================= -->
+    <div id="loginScreen" class="min-h-screen flex flex-col items-center justify-center p-6 bg-slate-900 relative overflow-hidden font-mono">
+        <!-- เอฟเฟกต์พื้นหลังสไตล์ Retro Grid -->
+        <div class="absolute inset-0 bg-[linear-gradient(transparent_95%,#334155_100%),linear-gradient(90deg,transparent_95%,#334155_100%)] bg-[length:40px_40px] opacity-30"></div>
+
+        <!-- กล่องล็อกอินสไตล์ Pixel กรอบหนา -->
+        <div class="bg-slate-800 p-8 w-full max-w-md border-4 border-blue-500 shadow-[8px_8px_0px_0px_rgba(59,130,246,0.8)] relative z-10">
             
+            <!-- ส่วนแสดงตัวการ์ตูนเอก 2 ตัว -->
+            <div class="flex justify-center items-end gap-8 mb-6 h-28">
+                <!-- ตัวละครที่ 1 (สายวิทย์ - นักวิทยาศาสตร์) -->
+                <div class="flex flex-col items-center animate-bounce" style="animation-delay: 0.1s;">
+                    <!-- สามารถเปลี่ยนลิงก์ src เป็นรูปตัวการ์ตูน 8 บิตของคุณเองได้ -->
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/scientist.png" alt="Sci-Boy" class="w-24 h-24 object-contain" style="image-rendering: pixelated;" />
+                    <span class="text-xs text-white font-bold mt-1 bg-blue-600 px-2 py-1 border-2 border-white shadow-sm">SCI-BOY</span>
+                </div>
+                
+                <!-- ตัวละครที่ 2 (สายคอม - โปรแกรมเมอร์สาว) -->
+                <div class="flex flex-col items-center animate-bounce" style="animation-delay: 0.4s;">
+                    <!-- สามารถเปลี่ยนลิงก์ src เป็นรูปตัวการ์ตูน 8 บิตของคุณเองได้ -->
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/trainers/cooltrainer-f.png" alt="Com-Girl" class="w-24 h-24 object-contain" style="image-rendering: pixelated;" />
+                    <span class="text-xs text-white font-bold mt-1 bg-pink-500 px-2 py-1 border-2 border-white shadow-sm">COM-GIRL</span>
+                </div>
+            </div>
+
+            <!-- ข้อความ Title ตู้เกม -->
+            <h1 class="text-4xl font-black text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400 mb-2 tracking-widest uppercase">
+                GAME SCI-COM AR
+            </h1>
+            <p class="text-center text-yellow-300 mb-6 text-sm animate-pulse">=== INSERT COIN TO START ===</p>
+            
+            <!-- ฟอร์มกรอกข้อมูลสไตล์ Terminal -->
             <form id="loginForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-bold mb-1">รหัสประจำตัวนักเรียน</label>
-                    <input type="number" id="studentId" required class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" placeholder="เช่น 12345">
+                    <label class="block text-sm font-bold mb-1 text-blue-300">> รหัสประจำตัว_</label>
+                    <input type="number" id="studentId" required class="w-full p-3 bg-slate-900 border-2 border-slate-600 text-green-400 focus:border-blue-500 focus:outline-none transition-colors" placeholder="Ex. 12345">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold mb-1">ชื่อ - นามสกุล</label>
-                    <input type="text" id="studentName" required class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" placeholder="กรอกชื่อของคุณ">
+                    <label class="block text-sm font-bold mb-1 text-blue-300">> ชื่อ-นามสกุล_</label>
+                    <input type="text" id="studentName" required class="w-full p-3 bg-slate-900 border-2 border-slate-600 text-green-400 focus:border-blue-500 focus:outline-none transition-colors" placeholder="Player Name">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold mb-1">ระดับชั้น</label>
-                    <input type="text" id="studentClass" required class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" placeholder="เช่น ม.4/1">
+                    <label class="block text-sm font-bold mb-1 text-blue-300">> ระดับชั้น_</label>
+                    <input type="text" id="studentClass" required class="w-full p-3 bg-slate-900 border-2 border-slate-600 text-green-400 focus:border-blue-500 focus:outline-none transition-colors" placeholder="Ex. ม.4/1">
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg mt-4 shadow-lg transition-transform active:scale-95">
-                    🚀 เริ่มการสำรวจ
+                
+                <!-- ปุ่มกดเข้าเกมแบบ 8-Bit (มีมิติเวลากด) -->
+                <button type="submit" class="w-full bg-green-500 hover:bg-green-400 text-slate-900 font-bold py-4 text-xl mt-6 border-b-4 border-green-700 active:border-b-0 active:translate-y-1 transition-all">
+                    [ START GAME ]
                 </button>
             </form>
         </div>
@@ -50,7 +78,13 @@
     <div id="gameScreen" class="hidden fixed inset-0 h-[100dvh] w-full flex-col overflow-hidden bg-slate-100">
         <!-- แถบสถานะด้านบน (ใส่ flex-shrink-0 ป้องกันการโดนบีบ) -->
         <div class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center z-20 flex-shrink-0">
-            <div class="font-bold">🧑‍🚀 <span id="displayPlayerName">Player</span></div>
+            <div class="font-bold flex items-center gap-2">
+                🧑‍🚀 <span id="displayPlayerName">Player</span>
+                <!-- ปุ่มออกจากระบบ (ล้างข้อมูลเครื่อง) -->
+                <button onclick="localStorage.clear(); location.reload();" class="ml-2 bg-red-500 hover:bg-red-600 text-xs px-2 py-1 rounded shadow">
+                    🚪 ออก
+                </button>
+            </div>
             <div class="font-bold text-yellow-300">⭐ <span id="displayScore">0</span> pt</div>
         </div>
         
@@ -70,21 +104,33 @@
         </div>
     </div>
     
-    <!-- ================= หน้าจอ AR Encounter ================= -->
-    <div id="arScreen" class="hidden fixed inset-0 z-50 bg-black flex-col">
+<!-- ================= หน้าจอ AR Encounter (อัปเกรด 8-Bit) ================= -->
+    <div id="arScreen" class="hidden fixed inset-0 z-50 bg-black flex-col items-center justify-center overflow-hidden">
         <!-- วิดีโอพื้นหลัง (กล้องมือถือ) -->
         <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0"></video>
-        <!-- Canvas สำหรับวาดไอเทม 2D ซ้อนทับ -->
-        <canvas id="arCanvas" class="absolute inset-0 w-full h-full z-10"></canvas>
+
+        <!-- ไอเทม AR แบบ 8-Bit (รองรับไฟล์ PNG และ GIF ขยับได้) -->
+        <div id="arItemContainer" class="relative z-10 flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-110">
+            <!-- เอฟเฟกต์แสงออร่าเรืองแสงด้านหลัง (Pulsating Aura) -->
+            <div class="absolute w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-60 animate-pulse"></div>
+
+            <!-- รูปภาพไอเทม 8-Bit (ลอยเด้งขึ้นลง) -->
+            <img id="arItemImage" src="" alt="AR Item" class="w-32 h-32 object-contain relative z-10 animate-bounce" style="image-rendering: pixelated;" />
+
+            <!-- ป้ายชื่อไอเทมสไตล์เกม RPG -->
+            <div id="arItemLabel" class="mt-6 bg-slate-900/90 text-white font-bold px-6 py-2 rounded-xl border-2 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.8)] relative z-10">
+                Item Name
+            </div>
+        </div>
         
         <!-- ปุ่มปิด AR -->
-        <div class="relative z-20 p-4 flex justify-between items-start">
-            <div class="bg-black/50 text-white px-4 py-2 rounded-lg font-bold">
-                🎯 แตะที่ไอเทมเพื่อจับ!
-            </div>
-            <button onclick="stopAR()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg">
+        <div class="absolute top-4 right-4 z-20">
+            <button onclick="stopAR()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl shadow-lg border-2 border-white">
                 ❌ ปิดกล้อง
             </button>
+        </div>
+        <div class="absolute top-4 left-4 z-20 bg-black/60 text-white px-4 py-2 rounded-lg font-bold border border-slate-500">
+            🎯 แตะที่ไอเทมเพื่อจับ!
         </div>
     </div>
 
@@ -466,39 +512,53 @@
             }, 2500);
         }
 
-        // ==========================================
-        // ระบบ AR (Camera & Canvas)
+    // ==========================================
+        // ระบบ AR (Camera & 8-Bit HTML Overlay)
         // ==========================================
         const arScreen = document.getElementById('arScreen');
         const cameraFeed = document.getElementById('cameraFeed');
-        const arCanvas = document.getElementById('arCanvas');
-        const ctx = arCanvas.getContext('2d');
-        
-        let arAnimationId;
-        let itemX, itemY, itemRadius = 60;
-        let floatingOffset = 0;
+        const arItemContainer = document.getElementById('arItemContainer');
+        const arItemImage = document.getElementById('arItemImage');
+        const arItemLabel = document.getElementById('arItemLabel');
 
         document.getElementById('btnArEncounter').addEventListener('click', () => {
             if (targetNode) startAR();
         });
 
+        // 🌟 ฟังก์ชันคลังรูปภาพ 8-Bit (เปลี่ยนลิงก์ภาพ PNG/GIF ได้ตามใจชอบ)
+        function getItemImage(itemName) {
+            // ตัวอย่าง: ถ้าชื่อไอเทมมีคำว่า "แร่" หรือ "ซิลิคอน" ให้ใช้รูปหิน
+            if (itemName.includes('ซิลิคอน') || itemName.includes('แร่')) {
+                return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hard-stone.png';
+            }
+            // ตัวอย่าง: ถ้ามีคำว่า "ข้อมูล" ให้ใช้รูปแผ่นดิสก์/ชิป
+            if (itemName.includes('ข้อมูล') || itemName.includes('ไบนารี')) {
+                return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/up-grade.png';
+            }
+            if (itemName.includes('ทองแดง')) {
+                return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/metal-coat.png';
+            }
+            
+            // รูปภาพเริ่มต้น (ถ้าไม่ตรงกับเงื่อนไขด้านบน จะแสดงรูปกล่องสมบัติทองคำ)
+            return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png';
+        }
+
         async function startAR() {
             arScreen.classList.remove('hidden');
             arScreen.classList.add('flex');
             
-            arCanvas.width = window.innerWidth;
-            arCanvas.height = window.innerHeight;
+            // เซตชื่อและโหลดรูปภาพ 8-Bit เข้าไปในหน้าจอ
+            arItemLabel.innerText = targetNode.Item_Name;
+            arItemImage.src = getItemImage(targetNode.Item_Name);
 
-            itemX = arCanvas.width / 2;
-            itemY = arCanvas.height / 2;
+            // รีเซ็ตให้ไอเทมแสดงขึ้นมา
+            arItemContainer.style.display = 'flex';
 
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: 'environment' } 
                 });
                 cameraFeed.srcObject = stream;
-                
-                drawARItem();
             } catch (err) {
                 alert("ไม่สามารถเปิดกล้องได้ กรุณาอนุญาตการเข้าถึงกล้อง");
                 stopAR();
@@ -512,44 +572,19 @@
             if (cameraFeed.srcObject) {
                 cameraFeed.srcObject.getTracks().forEach(track => track.stop());
             }
-            cancelAnimationFrame(arAnimationId);
         }
 
-        function drawARItem() {
-            ctx.clearRect(0, 0, arCanvas.width, arCanvas.height);
-            
-            floatingOffset += 0.05;
-            let currentY = itemY + Math.sin(floatingOffset) * 20;
-
-            ctx.beginPath();
-            ctx.arc(itemX, currentY, itemRadius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
-            ctx.fill();
-            ctx.lineWidth = 5;
-            ctx.strokeStyle = 'white';
-            ctx.stroke();
-
-            ctx.fillStyle = 'white';
-            ctx.font = 'bold 20px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(targetNode.Item_Name, itemX, currentY);
-
-            arAnimationId = requestAnimationFrame(drawARItem);
-        }
-
-        arCanvas.addEventListener('pointerdown', (e) => {
+        // ตรวจจับการแตะที่ไอเทม (แก้ไขปัญหา Ghost Click ด้วยการซ่อนทันที)
+        arItemContainer.addEventListener('pointerdown', (e) => {
             e.preventDefault(); 
-            let currentY = itemY + Math.sin(floatingOffset) * 20;
             
-            const dist = Math.hypot(e.clientX - itemX, e.clientY - currentY);
-            if (dist <= itemRadius + 20) { 
-                stopAR();
-                
-                setTimeout(() => {
-                    openQuiz(targetNode.Node_ID);
-                }, 300);
-            }
+            // ซ่อนรูปไอเทมทันที เพื่อไม่ให้นิ้วทะลุไปโดนปุ่มควิซ
+            arItemContainer.style.display = 'none';
+            stopAR();
+            
+            setTimeout(() => {
+                openQuiz(targetNode.Node_ID);
+            }, 300);
         });
 
         // ==========================================
