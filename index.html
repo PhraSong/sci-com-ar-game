@@ -233,7 +233,7 @@
             }).addTo(map);
 
             spawnItems();
-            setInterval(spawnItems, 300000);
+            setInterval(spawnItems, 180000);
 
             if (navigator.geolocation) {
                 navigator.geolocation.watchPosition(updatePlayerPosition, (err) => console.warn(err), {
@@ -272,24 +272,24 @@
 
             const gameData = JSON.parse(localStorage.getItem('gameData'));
             if (gameData && gameData.nodes) {
-                gameData.nodes.forEach(node => {
-                    // 🛑 [แก้ปัญหาไอเทมเกิดน้อย ข้อที่ 1] 
-                    // ใส่คำว่า String() ครอบ Item_Name ไว้ ป้องกันโค้ดพังเวลาเผลอพิมพ์ตัวเลขใน Google Sheets
-                    if (!node.Node_ID || !node.Item_Name || String(node.Item_Name).trim() === "") {
-                        return; 
-                    }
+                // 1. กรองเฉพาะบรรทัดที่มีข้อมูลสมบูรณ์
+                let validNodes = gameData.nodes.filter(node => node.Node_ID && node.Item_Name && String(node.Item_Name).trim() !== "");
+                
+                // 2. สับเปลี่ยนข้อมูลแบบสุ่ม (Shuffle)
+                validNodes.sort(() => 0.5 - Math.random());
+                
+                // 3. ตัดมาแสดงผลแค่ 15 ไอเทมเท่านั้น
+                let selectedNodes = validNodes.slice(0, 15);
 
+                selectedNodes.forEach(node => {
                     const randomLat = PLAY_AREA.minLat + Math.random() * (PLAY_AREA.maxLat - PLAY_AREA.minLat);
                     const randomLng = PLAY_AREA.minLng + Math.random() * (PLAY_AREA.maxLng - PLAY_AREA.minLng);
 
                     node.Lat = randomLat;
                     node.Lng = randomLng;
 
-                    // ดึงสีตามระดับ Rarity
                     let rColor = getRarityColors(node.Rarity);
 
-                    // 🛑 [แก้ปัญหาวงไอเทมไม่ใส] 
-                    // เพิ่มคำสั่ง opacity: 0.85; (ความโปร่งใส 85%) เข้าไปใน style ของวงกลมไอเทม (?)
                     const mysteryIcon = L.divIcon({
                         className: 'mystery-icon',
                         html: `<div style='background-color:${rColor.bg}; opacity:0.85; color:${rColor.text}; width:35px; height:35px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:20px; box-shadow:0 0 15px ${rColor.shadow}; backdrop-filter: blur(2px);'>?</div>`,
@@ -679,7 +679,30 @@
                 document.getElementById('resultTitle').innerHTML = "FAILED!";
                 document.getElementById('resultTitle').className = "text-2xl font-black mb-2 text-red-500";
                 document.getElementById('resultFact').innerText = "TRY AGAIN LATER!";
+
+                // เลือกลบไอเทมเมื่อตอบผิด
+                processCatchFail();
             }
+
+        }
+
+        // ==========================================
+        // ฟังก์ชันเมื่อตอบผิด (ลบไอเทมออก แต่ไม่ได้คะแนน)
+        // ==========================================
+        function processCatchFail() {
+            // 1. ลบไอเทมที่ตอบผิดออกจากแผนที่
+            const caughtItemIndex = itemMarkers.findIndex(item => item.data.Node_ID === targetNode.Node_ID);
+            if(caughtItemIndex > -1) {
+                map.removeLayer(itemMarkers[caughtItemIndex].marker); 
+                itemMarkers.splice(caughtItemIndex, 1); 
+            }
+
+            // 2. ล้างข้อมูลเป้าหมายและรีเซ็ตปุ่ม AR
+            targetNode = null;
+            const btnAR = document.getElementById('btnArEncounter');
+            btnAR.disabled = true;
+            btnAR.className = "flex-1 bg-slate-700 text-slate-500 font-bold py-3 px-2 border-b-4 border-slate-800 transition-all duration-300 text-sm sm:text-base flex items-center justify-center whitespace-nowrap";
+            btnAR.innerText = "NO SIGNAL";
         }
 
         // ==========================================
