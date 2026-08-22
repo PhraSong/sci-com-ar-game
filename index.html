@@ -231,9 +231,7 @@
             L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
                 maxZoom: 20, attribution: '© Google Maps'
             }).addTo(map);
-            // 🛑 [เพิ่มโค้ดส่วนนี้] วาดกรอบสี่เหลี่ยมสีแดง เพื่อดูขอบเขตที่ตั้งไว้บนหน้าจอ
-            const bounds = [[PLAY_AREA.minLat, PLAY_AREA.minLng], [PLAY_AREA.maxLat, PLAY_AREA.maxLng]];
-            L.rectangle(bounds, {color: "#ff0000", weight: 3, fillOpacity: 0.05, dashArray: '5, 5'}).addTo(map);
+            
 
             spawnItems();
             setInterval(spawnItems, 180000);
@@ -248,7 +246,8 @@
             window.addEventListener("deviceorientationabsolute", (event) => {
                 let compass = document.getElementById('playerMarkerGfx');
                 if (compass && event.alpha !== null) {
-                    let heading = 360 - event.alpha;
+                    // ของเดิม: let heading = 360 - event.alpha;
+                let heading = (360 - event.alpha) + 180;
                     compass.style.transform = `rotate(${heading}deg)`;
                 }
             }, true);
@@ -350,7 +349,7 @@
             if (gpsHeading !== null && !isNaN(gpsHeading) && speed > 0.5) {
                 let compass = document.getElementById('playerMarkerGfx');
                 if (compass) {
-                    compass.style.transform = `rotate(${gpsHeading}deg)`;
+                    compass.style.transform = `rotate(${gpsHeading + 180}deg)`;
                 }
             }
 
