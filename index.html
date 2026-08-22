@@ -227,8 +227,9 @@
             const centerLng = (PLAY_AREA.minLng + PLAY_AREA.maxLng) / 2;
             map = L.map('map', { zoomControl: false }).setView([centerLat, centerLng], 18); 
             
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 20, attribution: '© OpenStreetMap'
+            // ใช้แผนที่ภาพถ่ายดาวเทียม Google Maps (Hybrid)
+            L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 20, attribution: '© Google Maps'
             }).addTo(map);
 
             spawnItems();
@@ -327,7 +328,8 @@
                     iconSize: [20, 20], iconAnchor: [10, 10]
                 });
                 playerMarker = L.marker([lat, lng], {icon: playerIcon}).addTo(map);
-                circleRadius = L.circle([lat, lng], { radius: INTERACTION_RADIUS, color: '#3b82f6', fillOpacity: 0.1, weight: 1 }).addTo(map);
+                // ปรับ fillOpacity เป็น 0 (พื้นหลังใส) และ weight เป็น 0 (ซ่อนเส้นขอบ)
+                circleRadius = L.circle([lat, lng], { radius: INTERACTION_RADIUS, color: 'transparent', fillOpacity: 0, weight: 0 }).addTo(map);
                 map.setView([lat, lng], 18); 
             } else {
                 playerMarker.setLatLng([lat, lng]);
