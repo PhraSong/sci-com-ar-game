@@ -216,10 +216,10 @@
         const INTERACTION_RADIUS = 15; 
 
         const PLAY_AREA = {
-            minLat: 17.01539686358777,  // ขอบเขตด้านล่าง (ทิศใต้)
-            maxLat: 17.015848394176164, // ขอบเขตด้านบน (ทิศเหนือ)
-            minLng: 104.55248039599424, // ขอบเขตซ้าย (ทิศตะวันตก)
-            maxLng: 104.55283000121132  // ขอบเขตขวา (ทิศตะวันออก)  
+            minLat: 17.015447020022076,   // ขอบเขตด้านล่าง (ทิศใต้)
+            maxLat: 17.016248173024067,  // ขอบเขตด้านบน (ทิศเหนือ)
+            minLng: 104.55233276680939, // ขอบเขตซ้าย (ทิศตะวันตก)
+            maxLng: 104.55310435755867  // ขอบเขตขวา (ทิศตะวันออก)  
         };
 
         function initMap() {
@@ -273,9 +273,9 @@
             const gameData = JSON.parse(localStorage.getItem('gameData'));
             if (gameData && gameData.nodes) {
                 gameData.nodes.forEach(node => {
-                    // 🛑 [ระบบที่เพิ่มใหม่] ตรวจสอบว่าเป็นไอเทมผี (บรรทัดว่าง) หรือไม่
-                    // ถ้าไม่มี Node_ID หรือไม่มีชื่อไอเทม ให้ข้ามบรรทัดนี้ไปเลย (return)
-                    if (!node.Node_ID || !node.Item_Name || node.Item_Name.trim() === "") {
+                    // 🛑 [แก้ปัญหาไอเทมเกิดน้อย ข้อที่ 1] 
+                    // ใส่คำว่า String() ครอบ Item_Name ไว้ ป้องกันโค้ดพังเวลาเผลอพิมพ์ตัวเลขใน Google Sheets
+                    if (!node.Node_ID || !node.Item_Name || String(node.Item_Name).trim() === "") {
                         return; 
                     }
 
@@ -288,9 +288,11 @@
                     // ดึงสีตามระดับ Rarity
                     let rColor = getRarityColors(node.Rarity);
 
+                    // 🛑 [แก้ปัญหาวงไอเทมไม่ใส] 
+                    // เพิ่มคำสั่ง opacity: 0.85; (ความโปร่งใส 85%) เข้าไปใน style ของวงกลมไอเทม (?)
                     const mysteryIcon = L.divIcon({
                         className: 'mystery-icon',
-                        html: `<div style='background-color:${rColor.bg}; color:${rColor.text}; width:35px; height:35px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:20px; box-shadow:0 0 15px ${rColor.shadow};'>?</div>`,
+                        html: `<div style='background-color:${rColor.bg}; opacity:0.85; color:${rColor.text}; width:35px; height:35px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:20px; box-shadow:0 0 15px ${rColor.shadow}; backdrop-filter: blur(2px);'>?</div>`,
                         iconSize: [35, 35],
                         iconAnchor: [17, 17]
                     });
