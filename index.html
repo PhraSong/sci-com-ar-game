@@ -240,17 +240,20 @@
                 });
             }
 
-            // [ระบบใหม่] อ่านค่าเข็มทิศจากเซ็นเซอร์มือถือ เพื่อหมุนลูกศรผู้เล่น
+            // [อัปเกรดเข็มทิศ] ดึงค่าเซ็นเซอร์แบบสัมบูรณ์ (Absolute) สำหรับ Android
+            window.addEventListener("deviceorientationabsolute", (event) => {
+                let compass = document.getElementById('playerMarkerGfx');
+                if (compass && event.alpha !== null) {
+                    let heading = 360 - event.alpha;
+                    compass.style.transform = `rotate(${heading}deg)`;
+                }
+            }, true);
+
+            // [อัปเกรดเข็มทิศ] สำหรับ iOS
             window.addEventListener("deviceorientation", (event) => {
                 let compass = document.getElementById('playerMarkerGfx');
-                if (compass) {
-                    let heading = 0;
-                    if (event.webkitCompassHeading) {
-                        heading = event.webkitCompassHeading; // สำหรับ iOS
-                    } else if (event.alpha !== null) {
-                        heading = 360 - event.alpha; // สำหรับ Android
-                    }
-                    compass.style.transform = `rotate(${heading}deg)`;
+                if (compass && event.webkitCompassHeading) {
+                    compass.style.transform = `rotate(${event.webkitCompassHeading}deg)`;
                 }
             }, true);
         }
@@ -307,11 +310,14 @@
         function updatePlayerPosition(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+            // ดึงค่าความเร็วและทิศทางการเดินจากดาวเทียม GPS โดยตรง
+            const speed = position.coords.speed; 
+            const gpsHeading = position.coords.heading; 
             
             if (!playerMarker) {
-                // [ระบบใหม่] เพิ่มลูกศรสีแดงชี้ทิศทาง (Compass Pointer) บนจุดสีฟ้า
+                // ปรับ transition ให้ลูกศรหมุนได้ลื่นไหล (Smooth) ขึ้น
                 const playerIconHTML = `
-                    <div id="playerMarkerGfx" style='background-color:#3b82f6; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); position:relative; transition: transform 0.1s ease-out;'>
+                    <div id="playerMarkerGfx" style='background-color:#3b82f6; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5); position:relative; transition: transform 0.3s ease-out;'>
                         <div style='position:absolute; top:-12px; left:2px; width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-bottom:10px solid #ef4444;'></div>
                     </div>
                 `;
@@ -326,6 +332,15 @@
             } else {
                 playerMarker.setLatLng([lat, lng]);
                 circleRadius.setLatLng([lat, lng]);
+            }
+
+            // [ระบบใหม่] ถ้าผู้เล่นกำลังก้าวเดิน (ความเร็ว > 0.5 เมตร/วินาที) 
+            // ให้ยึดลูกศรตามทิศทางของ GPS เป็นหลัก เพราะแม่นยำกว่าการหมุนมือถือ
+            if (gpsHeading !== null && !isNaN(gpsHeading) && speed > 0.5) {
+                let compass = document.getElementById('playerMarkerGfx');
+                if (compass) {
+                    compass.style.transform = `rotate(${gpsHeading}deg)`;
+                }
             }
 
             checkDistanceToItems(lat, lng);
