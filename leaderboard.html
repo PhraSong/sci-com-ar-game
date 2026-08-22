@@ -22,13 +22,7 @@
 
     <!-- คอนเทนเนอร์จัดอันดับ -->
     <div id="leaderboardContainer" class="w-full max-w-3xl hidden flex-col relative z-10">
-        
-        <!-- แท่นโพเดียม Top 3 -->
-        <div id="podium" class="flex justify-center items-end gap-2 sm:gap-6 mb-8 h-48">
-            <!-- โค้ด JS จะมาวาดแท่นอันดับ 2, 1, 3 ตรงนี้ -->
-        </div>
-
-        <!-- ตารางอันดับ 4 เป็นต้นไป -->
+        <!-- ตารางแสดงผลทุกคนเรียงเป็นแถวแนวนอน -->
         <div class="bg-slate-800 border-4 border-blue-500 p-1 sm:p-4 shadow-[8px_8px_0px_0px_rgba(59,130,246,0.8)]">
             <table class="w-full text-left border-collapse">
                 <thead class="text-blue-300 border-b-4 border-slate-600 text-sm sm:text-base">
@@ -71,10 +65,7 @@
             document.getElementById('leaderboardContainer').classList.remove('hidden');
             document.getElementById('leaderboardContainer').classList.add('flex');
 
-            const podium = document.getElementById('podium');
             const rankList = document.getElementById('rankList');
-            
-            podium.innerHTML = '';
             rankList.innerHTML = '';
 
             if (!players || players.length === 0) {
@@ -82,39 +73,43 @@
                 return;
             }
 
-            // --- สร้างแท่น Top 3 (เรียงตำแหน่ง 2 -> 1 -> 3) ---
-            const top3 = [players[1], players[0], players[2]];
-            const podiumHeights = ['h-32', 'h-48', 'h-24']; 
-            const podiumColors = ['border-gray-400 bg-gray-300 text-slate-900', 'border-yellow-400 bg-yellow-300 text-slate-900', 'border-orange-600 bg-orange-400 text-slate-900'];
-            const medals = ['🥈', '👑', '🥉'];
-
-            top3.forEach((p, index) => {
-                if (!p) return; // ถ้าคนเล่นยังไม่ครบ 3 คน ให้ข้ามไป
-                const box = document.createElement('div');
-                box.className = `flex flex-col items-center justify-end w-24 sm:w-32 transition-all duration-500 hover:-translate-y-2`;
-                box.innerHTML = `
-                    <div class="text-3xl sm:text-4xl mb-1 animate-bounce" style="animation-delay: ${index * 0.2}s">${medals[index]}</div>
-                    <!-- เปลี่ยนมาใช้ p.Name และ p.Total_Score -->
-                    <div class="font-bold text-center text-xs sm:text-sm truncate w-full px-1 text-white mb-1">${p.Name || 'Unknown'}</div>
-                    <div class="font-black text-yellow-300 text-sm sm:text-base mb-2">${p.Total_Score || 0} PT</div>
-                    <div class="w-full ${podiumHeights[index]} border-x-4 border-t-4 ${podiumColors[index]} flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-                        <span class="text-4xl font-black opacity-50">${index === 1 ? '1' : index === 0 ? '2' : '3'}</span>
-                    </div>
-                `;
-                podium.appendChild(box);
-            });
-
-            // --- สร้างตารางอันดับ 4 เป็นต้นไป ---
-            for (let i = 3; i < players.length; i++) {
+            // --- สร้างตารางอันดับทุกคน (อันดับ 1-3 จะมีแถบสีพิเศษ) ---
+            for (let i = 0; i < players.length; i++) {
                 const p = players[i];
                 const row = document.createElement('tr');
-                row.className = "border-b-2 border-slate-700 hover:bg-slate-700 transition-colors";
+                
+                // ตัวแปรสำหรับปรับแต่งสีแต่ละอันดับ
+                let rowStyle = "border-b-2 border-slate-700 hover:bg-slate-700 transition-colors";
+                let rankColor = "text-slate-400";
+                let nameColor = "text-green-400";
+                let scoreColor = "text-yellow-400";
+
+                // ใส่แถบสีสวยๆ ให้อันดับ 1 ถึง 3
+                if (i === 0) { // 🥇 อันดับ 1 (ทอง)
+                    rowStyle = "bg-yellow-900/40 border-l-4 border-b-4 border-yellow-400 shadow-[inset_0_0_15px_rgba(253,224,71,0.2)] hover:bg-yellow-900/60";
+                    rankColor = "text-yellow-400 text-xl font-black";
+                    nameColor = "text-yellow-300 text-xl";
+                    scoreColor = "text-yellow-300 text-xl";
+                } 
+                else if (i === 1) { // 🥈 อันดับ 2 (เงิน)
+                    rowStyle = "bg-slate-600/50 border-l-4 border-b-4 border-slate-300 shadow-[inset_0_0_15px_rgba(203,213,225,0.1)] hover:bg-slate-600/70";
+                    rankColor = "text-slate-300 text-lg font-black";
+                    nameColor = "text-white text-lg";
+                    scoreColor = "text-slate-200 text-lg";
+                } 
+                else if (i === 2) { // 🥉 อันดับ 3 (ทองแดง)
+                    rowStyle = "bg-orange-900/40 border-l-4 border-b-4 border-orange-500 shadow-[inset_0_0_15px_rgba(249,115,22,0.2)] hover:bg-orange-900/60";
+                    rankColor = "text-orange-500 text-lg font-black";
+                    nameColor = "text-orange-300 text-lg";
+                    scoreColor = "text-orange-400 text-lg";
+                }
+
+                row.className = rowStyle;
                 row.innerHTML = `
-                    <td class="py-3 px-2 text-center font-bold text-slate-400">#${i + 1}</td>
-                    <!-- เปลี่ยนมาใช้ p.Name, p.Class และ p.Total_Score -->
-                    <td class="py-3 px-2 font-bold text-green-400">${p.Name || 'Unknown'}</td>
-                    <td class="py-3 px-2 text-slate-400 hidden sm:table-cell">${p.Class || '-'}</td>
-                    <td class="py-3 px-2 text-right font-bold text-yellow-400">${p.Total_Score || 0}</td>
+                    <td class="py-4 px-2 text-center font-bold ${rankColor}">#${i + 1}</td>
+                    <td class="py-4 px-2 font-bold ${nameColor}">${p.Name || 'Unknown'}</td>
+                    <td class="py-4 px-2 text-slate-400 hidden sm:table-cell">${p.Class || '-'}</td>
+                    <td class="py-4 px-2 text-right font-black ${scoreColor}">${p.Total_Score || 0}</td>
                 `;
                 rankList.appendChild(row);
             }
