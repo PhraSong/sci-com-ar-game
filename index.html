@@ -68,7 +68,6 @@
             <div class="font-bold flex items-center gap-2 text-green-400">
                 [P1] <span id="displayPlayerName">Player</span>
                 <button onclick="localStorage.clear(); location.reload();" class="ml-2 bg-red-600 hover:bg-red-500 text-white text-xs px-2 py-1 border-b-2 border-red-800 active:translate-y-1 active:border-b-0">LOGOUT</button>
-                <button onclick="window.location.href='leaderboard.html'" class="ml-2 bg-purple-600 hover:bg-purple-500 text-white text-xs px-2 py-1 border-b-2 border-purple-800 active:translate-y-1 active:border-b-0">RANKING</button>
             </div>
             <div class="font-bold text-yellow-400 tracking-widest">SCORE:<span id="displayScore" class="ml-2">0</span></div>
         </div>
@@ -232,7 +231,9 @@
             L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
                 maxZoom: 20, attribution: '© Google Maps'
             }).addTo(map);
-            
+            // 🛑 [เพิ่มโค้ดส่วนนี้] วาดกรอบสี่เหลี่ยมสีแดง เพื่อดูขอบเขตที่ตั้งไว้บนหน้าจอ
+            const bounds = [[PLAY_AREA.minLat, PLAY_AREA.minLng], [PLAY_AREA.maxLat, PLAY_AREA.maxLng]];
+            L.rectangle(bounds, {color: "#ff0000", weight: 3, fillOpacity: 0.05, dashArray: '5, 5'}).addTo(map);
 
             spawnItems();
             setInterval(spawnItems, 180000);
@@ -247,8 +248,7 @@
             window.addEventListener("deviceorientationabsolute", (event) => {
                 let compass = document.getElementById('playerMarkerGfx');
                 if (compass && event.alpha !== null) {
-                    // ของเดิม: let heading = 360 - event.alpha;
-                let heading = (360 - event.alpha) + 180;
+                    let heading = 360 - event.alpha;
                     compass.style.transform = `rotate(${heading}deg)`;
                 }
             }, true);
@@ -293,9 +293,10 @@
 
                     let rColor = getRarityColors(node.Rarity);
 
+                    // [ระบบใหม่] แสดงแค่ตัวอักษร ? พร้อมสีตามระดับความหายาก (ไม่มีกรอบวงกลม)
                     const mysteryIcon = L.divIcon({
                         className: 'mystery-icon',
-                        html: `<div style='background-color:${rColor.bg}; opacity:0.85; color:${rColor.text}; width:35px; height:35px; border-radius:50%; border:3px solid white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:20px; box-shadow:0 0 15px ${rColor.shadow}; backdrop-filter: blur(2px);'>?</div>`,
+                        html: `<div style='color:${rColor.bg}; font-weight:900; font-size:40px; text-shadow: 2px 2px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 1px 1px 0px #000, 0 0 15px ${rColor.bg}; display:flex; justify-content:center; align-items:center; width:35px; height:35px;'>?</div>`,
                         iconSize: [35, 35],
                         iconAnchor: [17, 17]
                     });
@@ -312,46 +313,41 @@
                 checkDistanceToItems(pos.lat, pos.lng);
             }
         }
+
+        // ฟังก์ชันสุ่มสีประจำตัวผู้เล่นตามรหัส ID
+        function getPlayerColor(idStr) {
+            const colors = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#eab308'];
+            let sum = 0;
+            if(idStr) {
+                for (let i = 0; i < idStr.length; i++) sum += idStr.charCodeAt(i);
+            }
+            return colors[sum % colors.length];
+        }
         
         function updatePlayerPosition(position) {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            // ดึงค่าความเร็วและทิศทางการเดินจากดาวเทียม GPS โดยตรง
-            const speed = position.coords.speed; 
-            const gpsHeading = position.coords.heading; 
             
             if (!playerMarker) {
-                // [ระบบใหม่] ไอคอนลูกศรนำทางแบบ Google Maps (Navigator Arrow)
+                // เรียกใช้สีประจำตัวจากรหัสนักเรียน
+                const pColor = getPlayerColor(localStorage.getItem('studentId'));
+                
+                // สร้างไอคอนวงกลมเรียบๆ ใช้สีประจำตัวผู้เล่น
                 const playerIconHTML = `
-                    <div id="playerMarkerGfx" style='width:30px; height:30px; position:relative; transition: transform 0.3s ease-out; transform-origin: center center;'>
-                        <svg viewBox="0 0 24 24" style="width:100%; height:100%; filter: drop-shadow(0px 3px 4px rgba(0,0,0,0.6));">
-                            <path d="M12 2 L22 21 L12 17 L2 21 Z" fill="#ef4444" stroke="#ffffff" stroke-width="2" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
+                    <div style='background-color:${pColor}; width:20px; height:20px; border-radius:50%; border:3px solid white; box-shadow:0 0 10px rgba(0,0,0,0.5);'></div>
                 `;
                 const playerIcon = L.divIcon({
                     className: 'custom-div-icon',
                     html: playerIconHTML,
-                    iconSize: [30, 30], 
-                    iconAnchor: [15, 15] // ตั้งให้จุดหมุนอยู่กึ่งกลางเป๊ะๆ
+                    iconSize: [20, 20], iconAnchor: [10, 10]
                 });
                 
                 playerMarker = L.marker([lat, lng], {icon: playerIcon}).addTo(map);
-                // ปรับ fillOpacity เป็น 0 (พื้นหลังใส) และ weight เป็น 0 (ซ่อนเส้นขอบ)
                 circleRadius = L.circle([lat, lng], { radius: INTERACTION_RADIUS, color: 'transparent', fillOpacity: 0, weight: 0 }).addTo(map);
                 map.setView([lat, lng], 18); 
             } else {
                 playerMarker.setLatLng([lat, lng]);
                 circleRadius.setLatLng([lat, lng]);
-            }
-
-            // [ระบบใหม่] ถ้าผู้เล่นกำลังก้าวเดิน (ความเร็ว > 0.5 เมตร/วินาที) 
-            // ให้ยึดลูกศรตามทิศทางของ GPS เป็นหลัก เพราะแม่นยำกว่าการหมุนมือถือ
-            if (gpsHeading !== null && !isNaN(gpsHeading) && speed > 0.5) {
-                let compass = document.getElementById('playerMarkerGfx');
-                if (compass) {
-                    compass.style.transform = `rotate(${gpsHeading + 180}deg)`;
-                }
             }
 
             checkDistanceToItems(lat, lng);
@@ -636,11 +632,12 @@
         let currentQuiz = null;
 
         function openQuiz(nodeId) {
-            const gameData = JSON.parse(localStorage.getItem('gameData'));
-            currentQuiz = gameData.quizzes.find(q => q.Node_ID === nodeId);
+            // [แก้ไขแล้ว] ดึงข้อมูลคำถามจากจุด (Node) ที่เราสแกนเจอได้เลย เพราะรวมอยู่ในชีต Nodes แล้ว
+            currentQuiz = targetNode;
             
-            if (!currentQuiz) {
-                alert("ไม่พบข้อมูลคำถามสำหรับจุดนี้");
+            // เช็กว่ามีคำถามอยู่จริงไหม (ป้องกันช่องว่างใน Google Sheets)
+            if (!currentQuiz || !currentQuiz.Question) {
+                alert("ไม่พบข้อมูลคำถามสำหรับจุดนี้ กรุณาตรวจสอบข้อมูลในชีต Nodes");
                 return;
             }
 
@@ -658,6 +655,9 @@
             ];
 
             choices.forEach(choice => {
+                // ข้ามปุ่มช้อยส์ที่ไม่มีข้อความ (กรณีบางข้ออาจจะมีแค่ถูก/ผิด)
+                if(!choice.text || String(choice.text).trim() === "") return;
+
                 const btn = document.createElement('button');
                 btn.className = "w-full text-left p-4 bg-slate-700 text-white border-2 border-slate-500 font-medium hover:bg-slate-600 hover:border-blue-400 focus:outline-none transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]";
                 btn.innerText = `${choice.key}. ${choice.text}`;
