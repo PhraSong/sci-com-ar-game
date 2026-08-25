@@ -3,34 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sci-Com AR - HIGH SCORES</title>
+    <title>Sci-Com AR - LEADERBOARD</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* เอฟเฟกต์เส้นสแกนหน้าจอตู้เกม (CRT Scanlines) */
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+            background-size: 100% 4px;
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* เอฟเฟกต์ตัวการ์ตูนลอยตัว (Floating) */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* เอฟเฟกต์ตารางเลื่อนเข้ามาทีละแถว (Slide-in) */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        .row-enter {
+            animation: slideIn 0.4s ease-out forwards;
+            opacity: 0; /* ซ่อนไว้ก่อนแอนิเมชันเริ่ม */
+        }
+    </style>
 </head>
 <body class="bg-slate-900 text-slate-100 font-mono antialiased min-h-screen flex flex-col items-center p-4 sm:p-8 relative overflow-hidden">
     
-    <!-- พื้นหลังตาราง Grid สไตล์ Retro -->
-    <div class="absolute inset-0 bg-[linear-gradient(transparent_95%,#334155_100%),linear-gradient(90deg,transparent_95%,#334155_100%)] bg-[length:40px_40px] opacity-20 pointer-events-none"></div>
+    <!-- เส้นสแกน CRT (เอาไว้บนสุดแต่ไม่ขวางการคลิก) -->
+    <div class="scanlines"></div>
 
-    <!-- หัวข้อหน้าจอ -->
-    <h1 class="text-5xl sm:text-7xl font-black text-center text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-orange-600 mb-2 mt-4 tracking-widest relative z-10" style="text-shadow: 4px 4px 0px rgba(0,0,0,0.8);">
-        HIGH SCORES
-    </h1>
-    <p class="text-green-400 animate-pulse mb-8 relative z-10">> AUTO UPDATE EVERY 15 SECONDS_</p>
+    <!-- พื้นหลังตาราง Grid สไตล์ Retro แบบขยับได้ -->
+    <div class="absolute inset-0 bg-[linear-gradient(transparent_95%,#334155_100%),linear-gradient(90deg,transparent_95%,#334155_100%)] bg-[length:40px_40px] opacity-20 animate-[pulse_4s_infinite]"></div>
+
+    <!-- ส่วนหัวข้อ & ตัวการ์ตูน -->
+    <div class="flex justify-center items-end gap-4 sm:gap-12 mt-6 mb-6 relative z-10 w-full max-w-4xl">
+        <!-- ตัวละคร Sci-Boy (ลอยสลับจังหวะ) -->
+        <div class="animate-float flex flex-col items-center" style="animation-delay: 0s;">
+            <img src="https://raw.githubusercontent.com/PhraSong/sci-com-ar-game/main/%E0%B9%80%E0%B8%94%E0%B9%87%E0%B8%81%E0%B8%9C%E0%B8%B9%E0%B9%89%E0%B8%8A%E0%B8%B2%E0%B8%A2.png" alt="Sci-Boy" class="w-16 h-16 sm:w-28 sm:h-28 object-contain drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]" style="image-rendering: pixelated;" />
+        </div>
+        
+        <!-- ข้อความตรงกลาง -->
+        <div class="flex flex-col items-center pb-2">
+            <h1 class="text-4xl sm:text-6xl font-black text-center text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-orange-600 tracking-widest" style="text-shadow: 0px 4px 0px #b45309, 0px 8px 15px rgba(217,119,6,0.6);">
+                RANKING
+            </h1>
+            <p class="text-green-400 animate-pulse mt-4 text-xs sm:text-sm font-bold bg-slate-800/80 px-4 py-1 border border-green-500 rounded-full">
+                > LIVE SYNC: EVERY 15 SEC_
+            </p>
+        </div>
+
+        <!-- ตัวละคร Com-Girl (ลอยสลับจังหวะ) -->
+        <div class="animate-float flex flex-col items-center" style="animation-delay: 1.5s;">
+            <img src="https://raw.githubusercontent.com/PhraSong/sci-com-ar-game/main/%E0%B9%80%E0%B8%94%E0%B9%87%E0%B8%81%E0%B8%9C%E0%B8%B9%E0%B9%89%E0%B8%AB%E0%B8%8D%E0%B8%B4%E0%B8%87.png" alt="Com-Girl" class="w-16 h-16 sm:w-28 sm:h-28 object-contain drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]" style="image-rendering: pixelated;" />
+        </div>
+    </div>
 
     <!-- สถานะกำลังโหลด -->
-    <div id="loading" class="text-2xl font-bold text-blue-400 animate-bounce mt-10">LOADING DATA...</div>
+    <div id="loading" class="text-xl sm:text-2xl font-bold text-blue-400 animate-bounce mt-10 relative z-10 flex items-center gap-3">
+        <svg class="animate-spin h-8 w-8 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        LOADING DATA...
+    </div>
 
     <!-- คอนเทนเนอร์จัดอันดับ -->
-    <div id="leaderboardContainer" class="w-full max-w-3xl hidden flex-col relative z-10">
-        <!-- ตารางแสดงผลทุกคนเรียงเป็นแถวแนวนอน -->
-        <div class="bg-slate-800 border-4 border-blue-500 p-1 sm:p-4 shadow-[8px_8px_0px_0px_rgba(59,130,246,0.8)]">
+    <div id="leaderboardContainer" class="w-full max-w-4xl hidden flex-col relative z-10">
+        <!-- กรอบตารางสไตล์ตู้เกม -->
+        <div class="bg-slate-800 border-4 border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.4),_8px_8px_0px_0px_rgba(59,130,246,0.8)] rounded-lg overflow-hidden">
+            <div class="bg-blue-900/50 border-b-4 border-blue-500 p-2 flex justify-between items-center px-4">
+                <span class="text-blue-300 text-xs sm:text-sm font-bold">SERVER: ONLINE</span>
+                <span class="text-blue-300 text-xs sm:text-sm font-bold">PLAYERS FOUND</span>
+            </div>
+            
             <table class="w-full text-left border-collapse">
-                <thead class="text-blue-300 border-b-4 border-slate-600 text-sm sm:text-base">
+                <thead class="text-slate-400 text-xs sm:text-sm bg-slate-900/50">
                     <tr>
-                        <th class="py-3 px-2 w-16 text-center">RANK</th>
-                        <th class="py-3 px-2">PLAYER</th>
-                        <th class="py-3 px-2 hidden sm:table-cell">CLASS</th>
-                        <th class="py-3 px-2 text-right">SCORE</th>
+                        <th class="py-4 px-3 w-16 text-center font-black">RANK</th>
+                        <th class="py-4 px-3 font-black">PLAYER</th>
+                        <th class="py-4 px-3 hidden sm:table-cell font-black">CLASS</th>
+                        <th class="py-4 px-3 text-right font-black">SCORE</th>
                     </tr>
                 </thead>
                 <tbody id="rankList" class="text-sm sm:text-lg">
@@ -41,14 +99,14 @@
     </div>
 
     <!-- ปุ่มกลับไปหน้าเกม -->
-    <button onclick="window.location.href='index.html'" class="mt-12 mb-8 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-8 border-b-4 border-blue-800 active:border-b-0 active:translate-y-1 transition-all text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] relative z-10">
-        [ RETURN TO GAME ]
+    <button onclick="window.location.href='index.html'" class="mt-12 mb-8 bg-pink-600 hover:bg-pink-500 text-white font-black py-4 px-8 border-b-4 border-pink-800 active:border-b-0 active:translate-y-1 transition-all text-xl shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] relative z-10 flex items-center gap-3 animate-pulse hover:animate-none">
+        <span class="text-2xl">◀</span> RETURN TO GAME
     </button>
 
     <script>
+        // ใส่ SCRIPT_URL ของคุณที่นี่
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxv7P0EbwB-k_5KOCcH5PjzAOhAFsu1vHliCZlIiTY-mhfzO76VKhSE1aBI2_42CVrBYw/exec';
         
-        // ฟังก์ชันดึงข้อมูล
         async function fetchLeaderboard() {
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=getLeaderboard`);
@@ -56,69 +114,71 @@
                 renderLeaderboard(players);
             } catch (error) {
                 console.error("Error fetching leaderboard:", error);
+                document.getElementById('loading').innerHTML = '<span class="text-red-500">CONNECTION ERROR! RETRYING...</span>';
             }
         }
 
-        // ฟังก์ชันวาดหน้าจอ
         function renderLeaderboard(players) {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('leaderboardContainer').classList.remove('hidden');
             document.getElementById('leaderboardContainer').classList.add('flex');
 
             const rankList = document.getElementById('rankList');
-            rankList.innerHTML = '';
+            rankList.innerHTML = ''; // ล้างข้อมูลเก่า
 
             if (!players || players.length === 0) {
-                rankList.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">> NO DATA FOUND_</td></tr>';
+                rankList.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500 font-bold">> DATABASE EMPTY_</td></tr>';
                 return;
             }
 
-            // --- สร้างตารางอันดับทุกคน (อันดับ 1-3 จะมีแถบสีพิเศษ) ---
             for (let i = 0; i < players.length; i++) {
                 const p = players[i];
                 const row = document.createElement('tr');
                 
-                // ตัวแปรสำหรับปรับแต่งสีแต่ละอันดับ
-                let rowStyle = "border-b-2 border-slate-700 hover:bg-slate-700 transition-colors";
-                let rankColor = "text-slate-400";
-                let nameColor = "text-green-400";
+                let rowStyle = "border-b border-slate-700/50 hover:bg-slate-700/50 transition-colors row-enter";
+                let rankColor = "text-slate-500";
+                let nameColor = "text-emerald-400";
                 let scoreColor = "text-yellow-400";
+                let rankDisplay = `#${i + 1}`;
 
-                // ใส่แถบสีสวยๆ ให้อันดับ 1 ถึง 3
-                if (i === 0) { // 🥇 อันดับ 1 (ทอง)
-                    rowStyle = "bg-yellow-900/40 border-l-4 border-b-4 border-yellow-400 shadow-[inset_0_0_15px_rgba(253,224,71,0.2)] hover:bg-yellow-900/60";
-                    rankColor = "text-yellow-400 text-xl font-black";
-                    nameColor = "text-yellow-300 text-xl";
-                    scoreColor = "text-yellow-300 text-xl";
+                // ตกแต่งพิเศษสำหรับ Top 3 (ใส่ไอคอนมงกุฎและเหรียญรางวัลแทนตัวเลข)
+                if (i === 0) { 
+                    rowStyle = "bg-yellow-900/30 border-l-4 border-yellow-400 shadow-[inset_0_0_20px_rgba(253,224,71,0.15)] hover:bg-yellow-900/50 row-enter";
+                    rankColor = "text-2xl";
+                    nameColor = "text-yellow-300 text-xl font-black drop-shadow-[0_0_5px_rgba(253,224,71,0.8)]";
+                    scoreColor = "text-yellow-300 text-xl font-black";
+                    rankDisplay = "👑";
                 } 
-                else if (i === 1) { // 🥈 อันดับ 2 (เงิน)
-                    rowStyle = "bg-slate-600/50 border-l-4 border-b-4 border-slate-300 shadow-[inset_0_0_15px_rgba(203,213,225,0.1)] hover:bg-slate-600/70";
-                    rankColor = "text-slate-300 text-lg font-black";
-                    nameColor = "text-white text-lg";
-                    scoreColor = "text-slate-200 text-lg";
+                else if (i === 1) { 
+                    rowStyle = "bg-slate-600/30 border-l-4 border-slate-300 shadow-[inset_0_0_20px_rgba(203,213,225,0.1)] hover:bg-slate-600/50 row-enter";
+                    rankColor = "text-2xl";
+                    nameColor = "text-white text-lg font-bold";
+                    scoreColor = "text-slate-200 text-lg font-bold";
+                    rankDisplay = "🥈";
                 } 
-                else if (i === 2) { // 🥉 อันดับ 3 (ทองแดง)
-                    rowStyle = "bg-orange-900/40 border-l-4 border-b-4 border-orange-500 shadow-[inset_0_0_15px_rgba(249,115,22,0.2)] hover:bg-orange-900/60";
-                    rankColor = "text-orange-500 text-lg font-black";
-                    nameColor = "text-orange-300 text-lg";
-                    scoreColor = "text-orange-400 text-lg";
+                else if (i === 2) { 
+                    rowStyle = "bg-orange-900/30 border-l-4 border-orange-500 shadow-[inset_0_0_20px_rgba(249,115,22,0.15)] hover:bg-orange-900/50 row-enter";
+                    rankColor = "text-2xl";
+                    nameColor = "text-orange-300 text-lg font-bold";
+                    scoreColor = "text-orange-400 text-lg font-bold";
+                    rankDisplay = "🥉";
                 }
 
                 row.className = rowStyle;
+                // ตั้งค่าเวลาหน่วงให้แถวเลื่อนลงมาทีละอัน (Cascade Animation)
+                row.style.animationDelay = `${i * 0.1}s`; 
+                
                 row.innerHTML = `
-                    <td class="py-4 px-2 text-center font-bold ${rankColor}">#${i + 1}</td>
-                    <td class="py-4 px-2 font-bold ${nameColor}">${p.Name || 'Unknown'}</td>
-                    <td class="py-4 px-2 text-slate-400 hidden sm:table-cell">${p.Class || '-'}</td>
-                    <td class="py-4 px-2 text-right font-black ${scoreColor}">${p.Total_Score || 0}</td>
+                    <td class="py-4 px-3 text-center font-bold ${rankColor}">${rankDisplay}</td>
+                    <td class="py-4 px-3 ${nameColor}">${p.Name || 'Unknown'}</td>
+                    <td class="py-4 px-3 text-slate-400 hidden sm:table-cell text-sm">${p.Class || '-'}</td>
+                    <td class="py-4 px-3 text-right font-black ${scoreColor}">${p.Total_Score || 0}</td>
                 `;
                 rankList.appendChild(row);
             }
         }
 
-        // โหลดข้อมูลครั้งแรกทันทีที่เปิดหน้าเว็บ
         fetchLeaderboard();
-
-        // ตั้งเวลาให้รีเฟรชข้อมูลอัตโนมัติทุกๆ 15 วินาที
         setInterval(fetchLeaderboard, 15000);
     </script>
 </body>
