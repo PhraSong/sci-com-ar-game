@@ -89,7 +89,8 @@
         <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0"></video>
         <div id="arItemContainer" class="relative z-10 flex flex-col items-center justify-center cursor-pointer transition-transform duration-300 hover:scale-110">
             <div class="absolute w-40 h-40 bg-blue-500 rounded-full blur-3xl opacity-60 animate-pulse"></div>
-            <img id="arItemImage" src="" alt="AR Item" class="w-32 h-32 object-contain relative z-10 animate-bounce" style="image-rendering: pixelated;" />
+            <!-- ปรับให้ภาพใหญ่ขึ้น สมูทขึ้น และเพิ่มแสงออร่ารอบๆ ไอเทม -->
+            <img id="arItemImage" src="" alt="AR Item" class="w-40 h-40 object-contain relative z-10 animate-[bounce_2s_infinite] transition-transform duration-500" style="filter: drop-shadow(0 0 15px rgba(59,130,246,0.9)) drop-shadow(0 0 30px rgba(16,185,129,0.7));" />
             <div id="arItemLabel" class="mt-6 bg-slate-900/90 text-white font-bold px-6 py-2 border-2 border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.8)] relative z-10 uppercase">Item Name</div>
         </div>
         <div class="absolute top-4 right-4 z-20">
@@ -561,22 +562,53 @@
             if (targetNode) startAR();
         });
 
-        // 🌟 ฟังก์ชันคลังรูปภาพ 8-Bit (เปลี่ยนลิงก์ภาพ PNG/GIF ได้ตามใจชอบ)
+        // 🌟 ฟังก์ชันดึงรูปภาพระดับ HD (SVG) ให้ตรงกับชื่อไอเทม 
         function getItemImage(itemName) {
-            // ตัวอย่าง: ถ้าชื่อไอเทมมีคำว่า "แร่" หรือ "ซิลิคอน" ให้ใช้รูปหิน
-            if (itemName.includes('ซิลิคอน') || itemName.includes('แร่')) {
-                return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/hard-stone.png';
-            }
-            // ตัวอย่าง: ถ้ามีคำว่า "ข้อมูล" ให้ใช้รูปแผ่นดิสก์/ชิป
-            if (itemName.includes('ข้อมูล') || itemName.includes('ไบนารี')) {
-                return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/up-grade.png';
-            }
-            if (itemName.includes('ทองแดง')) {
-                return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/metal-coat.png';
-            }
-            
-            // รูปภาพเริ่มต้น (ถ้าไม่ตรงกับเงื่อนไขด้านบน จะแสดงรูปกล่องสมบัติทองคำ)
-            return 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/nugget.png';
+            // ใช้ไอคอนแบบ Vector ความละเอียดสูงจาก Google Noto (ผ่าน API ของ Iconify)
+            const baseUrl = "https://api.iconify.design/noto/";
+            const suffix = ".svg?width=256";
+
+            let icon = "package"; // รูปกล่องปริศนา (ค่าเริ่มต้นถ้าหาไม่เจอ)
+
+            // 🪨 หมวดวัสดุและแร่ดิบ
+            if (itemName.includes('ซิลิคอน') || itemName.includes('พลาสติก') || itemName.includes('สารกึ่ง')) icon = "rock";
+            else if (itemName.includes('ทองคำ') || itemName.includes('ทองแดง') || itemName.includes('แร่เงิน')) icon = "coin";
+            else if (itemName.includes('ลิเธียม') || itemName.includes('โคบอลต์') || itemName.includes('แบตเตอรี่')) icon = "battery";
+            else if (itemName.includes('แก้ว') || itemName.includes('เลนส์')) icon = "crystal-ball";
+
+            // 🔌 หมวดสายไฟและวงจรชิ้นส่วน
+            else if (itemName.includes('สาย')) icon = "electric-plug";
+            else if (itemName.includes('ชิป') || itemName.includes('ทรานซิสเตอร์') || itemName.includes('ไดโอด') || itemName.includes('คอนโทรลเลอร์')) icon = "abacus";
+            else if (itemName.includes('แผงวงจร') || itemName.includes('บอร์ด')) icon = "desktop-computer";
+            else if (itemName.includes('เซนเซอร์') || itemName.includes('กล้อง')) icon = "camera";
+            else if (itemName.includes('มอเตอร์') || itemName.includes('ล้อ')) icon = "gear";
+            else if (itemName.includes('หน้าจอ')) icon = "television";
+
+            // 📡 หมวดเครือข่ายและการสื่อสาร
+            else if (itemName.includes('Wi-Fi') || itemName.includes('สัญญาณ') || itemName.includes('คลื่น')) icon = "antenna-bars";
+            else if (itemName.includes('เราเตอร์') || itemName.includes('GPS')) icon = "satellite-antenna";
+
+            // 💾 หมวดข้อมูลและหน่วยความจำ
+            else if (itemName.includes('ข้อมูล') || itemName.includes('ไบนารี')) icon = "input-numbers";
+            else if (itemName.includes('ไดรฟ์') || itemName.includes('ฮาร์ดดิสก์') || itemName.includes('RAM')) icon = "floppy-disk";
+
+            // 💻 หมวดซอฟต์แวร์ โค้ด และ AI
+            else if (itemName.includes('โค้ด') || itemName.includes('สคริปต์') || itemName.includes('อัลกอริทึม') || itemName.includes('ระบบปฏิบัติการ')) icon = "laptop";
+            else if (itemName.includes('เข้ารหัส') || itemName.includes('บล็อกเชน') || itemName.includes('คอนแทรค')) icon = "locked";
+            else if (itemName.includes('AI') || itemName.includes('ปัญญาประดิษฐ์') || itemName.includes('โมเดล') || itemName.includes('ประสาท')) icon = "brain";
+
+            // 🚀 หมวดนวัตกรรมและอุปกรณ์ล้ำยุค
+            else if (itemName.includes('หุ่นยนต์') || itemName.includes('แขนกล')) icon = "robot";
+            else if (itemName.includes('โดรน')) icon = "helicopter";
+            else if (itemName.includes('รถยนต์')) icon = "automobile";
+            else if (itemName.includes('แว่นตา')) icon = "goggles";
+            else if (itemName.includes('สมาร์ท')) icon = "watch";
+            else if (itemName.includes('คลาวด์') || itemName.includes('เซิร์ฟเวอร์')) icon = "cloud";
+            else if (itemName.includes('ดาวเทียม')) icon = "satellite";
+            else if (itemName.includes('โฮโลแกรม') || itemName.includes('ควอนตัม')) icon = "sparkles";
+            else if (itemName.includes('พลังงาน')) icon = "high-voltage";
+
+            return baseUrl + icon + suffix;
         }
 
         async function startAR() {
